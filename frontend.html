@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Data Automation AI</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Segoe UI;
+    background:#0f172a;
+    color:white;
+    display:flex;
+}
+
+.sidebar{
+    width:220px;
+    background:#111827;
+    padding:20px;
+    height:100vh;
+}
+
+.sidebar h2{
+    margin-bottom:30px;
+}
+
+.sidebar button{
+    width:100%;
+    padding:12px;
+    margin-bottom:10px;
+    border:none;
+    border-radius:8px;
+    background:#1f2937;
+    color:white;
+    cursor:pointer;
+}
+
+.sidebar button:hover{
+    background:#2563eb;
+}
+
+.main{
+    flex:1;
+    padding:30px;
+    overflow-y:auto;
+}
+
+.page{ display:none; }
+.page.active{ display:block; }
+
+.card{
+    background:#1e293b;
+    padding:25px;
+    border-radius:12px;
+    margin-bottom:20px;
+}
+
+input, select, textarea{
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:none;
+    margin-top:10px;
+    margin-bottom:15px;
+}
+
+button.primary{
+    background:#2563eb;
+    color:white;
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+    background:#1e293b;
+}
+
+th, td{
+    padding:10px;
+    border:1px solid #334155;
+}
+
+th{
+    background:#111827;
+}
+
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Data AI</h2>
+    <button onclick="navigate('upload')">Upload</button>
+    <button onclick="navigate('table')">Table</button>
+    <button onclick="navigate('query')">AI Query</button>
+</div>
+
+<div class="main">
+
+<!-- Upload Page -->
+<div id="upload" class="page active">
+    <div class="card">
+        <h2>Upload Dataset</h2>
+
+        <input type="file" id="fileInput">
+
+        <select id="delimiterSelect">
+            <option value="">No Delimiter</option>
+            <option value="comma">Comma (,)</option>
+            <option value="tab">Tab</option>
+            <option value="pipe">Pipe (|)</option>
+            <option value="semicolon">Semicolon (;)</option>
+        </select>
+
+        <button class="primary" onclick="uploadFile()">Upload</button>
+
+        <div id="uploadStatus"></div>
+    </div>
+</div>
+
+<!-- Table Page -->
+<div id="table" class="page">
+    <div class="card">
+        <h2>Dataset Preview</h2>
+        <button class="primary" onclick="loadTable()">Refresh Table</button>
+
+        <table>
+            <thead>
+                <tr id="tableHead"></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Query Page -->
+<div id="query" class="page">
+    <div class="card">
+        <h2>AI SQL Agent</h2>
+
+        <textarea id="userQuery" rows="4"
+            placeholder="Example: Remove duplicate rows or Show churn rate by contract type">
+        </textarea>
+
+        <button class="primary" onclick="runQuery()">Run</button>
+
+        <h3>Generated SQL</h3>
+        <pre id="generatedSQL"></pre>
+
+        <h3>Result</h3>
+        <table>
+            <thead>
+                <tr id="queryHead"></tr>
+            </thead>
+            <tbody id="queryBody"></tbody>
+        </table>
+
+        <br>
+        <button class="primary" onclick="downloadDataset()">Download Updated Dataset</button>
+    </div>
+</div>
+
+</div>
+
+<script>
+
+function navigate(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// ================= UPLOAD =================
+
+async function uploadFile(){
+
+    const file = document.getElementById("fileInput").files[0];
+    const delimiter = document.getElementById("delimiterSelect").value;
+
+    if(!file){
+        alert("Please select file");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("delimiter", delimiter);
+
+    const response = await fetch("/upload",{
+        method:"POST",
+        body:formData
+    });
+
+    const data = await response.json();
+
+    if(!response.ok){
+        alert(data.detail);
+        return;
+    }
+
+    document.getElementById("uploadStatus").innerText =
+        `Uploaded ${data.rows} rows successfully`;
+
+    await loadTable();
+    navigate("table");
+}
+
+// ================= LOAD TABLE =================
+
+async function loadTable(){
+
+    const response = await fetch("/table");
+    const data = await response.json();
+
+    renderTable("tableHead", "tableBody", data.columns, data.rows);
+}
+
+function renderTable(headId, bodyId, columns, rows){
+
+    const head = document.getElementById(headId);
+    const body = document.getElementById(bodyId);
+
+    head.innerHTML = "";
+    body.innerHTML = "";
+
+    columns.forEach(col=>{
+        const th = document.createElement("th");
+        th.innerText = col;
+        head.appendChild(th);
+    });
+
+    rows.forEach(row=>{
+        const tr = document.createElement("tr");
+        row.forEach(cell=>{
+            const td = document.createElement("td");
+            td.innerText = cell ?? "";
+            tr.appendChild(td);
+        });
+        body.appendChild(tr);
+    });
+}
+
+// ================= QUERY =================
+
+async function runQuery(){
+
+    const query = document.getElementById("userQuery").value;
+
+    const response = await fetch("/query",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({query:query})
+    });
+
+    const data = await response.json();
+
+    if(!response.ok){
+        alert(data.detail);
+        return;
+    }
+
+    document.getElementById("generatedSQL").innerText = data.generated_sql;
+
+    renderTable("queryHead", "queryBody", data.columns, data.rows);
+}
+
+// ================= DOWNLOAD =================
+
+function downloadDataset(){
+    window.location.href = "/download";
+}
+
+</script>
+
+</body>
+</html>
