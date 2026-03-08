@@ -12,15 +12,15 @@ from sqlalchemy import create_engine, text
 from agent.sql_agent import generate_sql, is_safe_sql
 from agent.sql_executor import execute_sql
 from ingestion.csv_excel_to_sqlite import dataframe_to_sqlite
-from ingestion.db_config import DB_PATH
+from ingestion.db_config import DB_PATH, DATA_ROOT
 from ingestion.export_utils import export_table
 from ingestion.file_loader import load_file
 from ingestion.schema_utils import get_table_schema, list_all_tables
 
 app = FastAPI(title="ORA AI Data Platform API")
 
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR = DATA_ROOT / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_TABLE_NAME = "dataset"
 TABLE_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
