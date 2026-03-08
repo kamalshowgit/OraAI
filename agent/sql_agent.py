@@ -37,8 +37,7 @@
 
 from agent.groq_client import call_groq
 from agent.sql_prompt import build_sql_prompt
-from agent.schema_linker import schema_link
-from ingestion.schema_utils import get_table_schema
+from ingestion.schema_utils import get_table_schema, list_all_tables
 
 BLOCKED_KEYWORDS = [
     "ATTACH",
@@ -57,14 +56,17 @@ def is_safe_sql(sql: str) -> bool:
     upper = sql.upper()
     return not any(bad in upper for bad in BLOCKED_KEYWORDS)
 
-def generate_sql(user_query: str, table_name: str) -> str:
-    schema = get_table_schema(table_name)
-    enriched_query = schema_link(user_query, schema)
+def build_schema_map() -> dict[str, list]:
+    tables = list_all_tables()
+    return {name: get_table_schema(name) for name in tables}
+
+def generate_sql(user_query: str, table_name: str | None = None) -> str:
+    schema_map = build_schema_map()
 
     messages = build_sql_prompt(
-        enriched_query,
-        table_name,
-        schema
+        user_query,
+        schema_map,
+        preferred_table=table_name,
     )
 
     raw_sql = call_groq(messages)
