@@ -115,14 +115,11 @@ def looks_like_sql(statement: str) -> bool:
 
 @app.get("/health")
 def health():
-    tables = list_all_tables() if DB_PATH.exists() else []
-    active_table = get_default_active_table(tables)
-
-    return {
-        "status": "ORA AI API is running",
-        "database_exists": DB_PATH.exists(),
-        "tables": tables,
-        "active_table": active_table,
+    try:
+        # Simple health check that doesn't require database operations
+        return {"status": "healthy", "service": "ORA AI API"}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
     }
 
 
