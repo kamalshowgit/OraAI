@@ -120,7 +120,6 @@ def health():
         return {"status": "healthy", "service": "ORA AI API"}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
-    }
 
 
 @app.post("/upload")
