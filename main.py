@@ -115,11 +115,7 @@ def looks_like_sql(statement: str) -> bool:
 
 @app.get("/health")
 def health():
-    try:
-        # Simple health check that doesn't require database operations
-        return {"status": "healthy", "service": "ORA AI API"}
-    except Exception as e:
-        return {"status": "unhealthy", "error": str(e)}
+    return "OK"
 
 
 @app.post("/upload")
