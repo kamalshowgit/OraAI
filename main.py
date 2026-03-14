@@ -397,6 +397,12 @@ def get_table(
 
 
 @app.get("/", response_class=HTMLResponse)
+def serve_landing():
+    with open("index.html", "r", encoding="utf-8") as landing_file:
+        return landing_file.read()
+
+
+@app.get("/app", response_class=HTMLResponse)
 def serve_frontend():
     with open("frontend.html", "r", encoding="utf-8") as frontend_file:
         return frontend_file.read()
