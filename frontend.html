@@ -102,16 +102,19 @@ body {
     padding: 10px 12px;
     font-size: 14px;
     cursor: pointer;
-    transition: 160ms ease;
+    transition: all 200ms ease;
+    transform: translateX(0);
 }
 
 .nav-btn:hover {
     background: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
 }
 
 .nav-btn.active {
     background: rgba(15, 142, 123, 0.3);
     border-color: rgba(184, 242, 231, 0.55);
+    transform: translateX(4px);
 }
 
 .rail-footer {
@@ -262,6 +265,8 @@ textarea {
     background: #fff;
     padding: 9px 10px;
     color: var(--text);
+    transition: all 200ms ease;
+    transform: translateY(0);
 }
 
 input:focus,
@@ -270,6 +275,7 @@ textarea:focus {
     outline: 2px solid transparent;
     border-color: var(--secondary);
     box-shadow: 0 0 0 3px rgba(27, 111, 201, 0.17);
+    transform: translateY(-1px);
 }
 
 textarea {
@@ -284,21 +290,30 @@ textarea {
     border-radius: 8px;
     padding: 9px 12px;
     cursor: pointer;
-    transition: 160ms ease;
+    transition: all 200ms ease;
     position: relative;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn:hover:not(:disabled) {
     background: #f6f9fd;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn:disabled {
     cursor: not-allowed;
     opacity: 0.7;
+    transform: none;
 }
 
 .btn.loading {
@@ -409,6 +424,10 @@ textarea {
     background-color: rgba(27, 111, 201, 0.04);
 }
 
+.table tr.table-row-enter {
+    animation: table-row-enter 300ms ease both;
+}
+
 .status {
     transition: all 200ms ease;
     animation: slide-in 300ms ease both;
@@ -510,6 +529,23 @@ textarea {
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+@keyframes data-update {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes table-row-enter {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .history-item h4 {
@@ -903,6 +939,9 @@ function setStatus(id, message, type = "info") {
     const el = document.getElementById(id);
     el.className = `status ${type}`;
     el.textContent = message;
+    el.style.animation = 'none';
+    el.offsetHeight; // Trigger reflow
+    el.style.animation = 'bounce-in 400ms ease';
 }
 
 async function apiRequest(url, options = {}) {
@@ -1197,8 +1236,10 @@ function renderTable(headId, bodyId, columns, rows) {
         head.appendChild(th);
     });
 
-    rows.forEach((row) => {
+    rows.forEach((row, index) => {
         const tr = document.createElement("tr");
+        tr.style.animationDelay = `${index * 50}ms`;
+        tr.classList.add('table-row-enter');
         row.forEach((value) => {
             const td = document.createElement("td");
             td.textContent = value === null || value === undefined ? "" : String(value);
