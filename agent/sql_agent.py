@@ -35,6 +35,8 @@
 
 
 
+import re
+
 from agent.groq_client import call_groq
 from agent.sql_prompt import build_sql_prompt
 from ingestion.schema_utils import get_table_schema, list_all_tables
@@ -46,6 +48,19 @@ BLOCKED_KEYWORDS = [
     "DROP DATABASE",
     "VACUUM"
 ]
+
+CREATE_TABLE_PATTERN = re.compile(
+    r"(?i)CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?P<name>(?:\"[^\"]+\"|`[^`]+`|\[[^\]]+\]|\w+))"
+)
+
+
+def normalize_create_table_statements(sql: str) -> str:
+    """Add DROP TABLE IF EXISTS before CREATE TABLE statements."""
+    def replacement(match):
+        name = match.group("name")
+        return f"DROP TABLE IF EXISTS {name};\n{match.group(0)}"
+
+    return CREATE_TABLE_PATTERN.sub(replacement, sql)
 
 def clean_sql(sql: str) -> str:
     lines = sql.strip().splitlines()
@@ -71,6 +86,7 @@ def generate_sql(user_query: str, table_name: str | None = None) -> str:
 
     raw_sql = call_groq(messages)
     sql = clean_sql(raw_sql)
+    sql = normalize_create_table_statements(sql)
 
     if not is_safe_sql(sql):
         raise ValueError("Unsafe SQL detected")
