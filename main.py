@@ -135,6 +135,28 @@ def health():
     }
 
 
+@app.get("/debug")
+def debug_info():
+    """Debug endpoint for production troubleshooting"""
+    try:
+        return {
+            "environment": "production" if os.getenv("RENDER") else "development",
+            "data_root": str(DATA_ROOT),
+            "db_path": str(DB_PATH),
+            "upload_dir": str(UPLOAD_DIR),
+            "dirs_exist": {
+                "data_root": DATA_ROOT.exists(),
+                "upload_dir": UPLOAD_DIR.exists(),
+                "db_dir": DB_PATH.parent.exists(),
+                "db_file": DB_PATH.exists(),
+            },
+            "upload_dir_contents": list(UPLOAD_DIR.iterdir()) if UPLOAD_DIR.exists() else [],
+            "tables": list_all_tables() if DB_PATH.exists() else [],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),

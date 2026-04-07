@@ -6,6 +6,9 @@ def dataframe_to_sqlite(
     df: pd.DataFrame,
     table_name: str
 ):
+    # Ensure database directory exists
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
     engine = create_engine(f"sqlite:///{DB_PATH}")
 
     df.to_sql(
