@@ -555,6 +555,7 @@ button:disabled {
         <button class="nav-btn active" data-target="data-source">Data Source</button>
         <button class="nav-btn" data-target="explorer">Explorer</button>
         <button class="nav-btn" data-target="ai-studio">AI Studio</button>
+        <button class="nav-btn" data-target="visualize">Visualize</button>
         <button class="nav-btn" data-target="history">History</button>
         <div class="rail-footer">
             Connect data, run AI SQL, inspect tables,
@@ -736,8 +737,32 @@ button:disabled {
                 </div>
 
                 <div class="card">
+                    <h3>Result Table</h3>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr id="queryHead"></tr></thead>
+                            <tbody id="queryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-visualize">
+                <div class="card">
+                    <h3>Visualize Active Table</h3>
+                    <p class="helper">Open the active dataset directly in Graph Studio for quick charts and insight generation.</p>
+                    <div class="actions">
+                        <button class="btn" id="openChartStudioBtn">Open Graph Studio</button>
+                    </div>
+                    <div id="visualizeStatus" class="status info">Use this after uploading or connecting a table.</div>
+                </div>
+                <div class="card">
                     <h3>Graph Builder</h3>
                     <div class="row">
+                        <label>
+                            Chart Title
+                            <input type="text" id="chartTitle" placeholder="Enter chart title">
+                        </label>
                         <label>
                             Chart Type
                             <select id="chartType">
@@ -746,32 +771,36 @@ button:disabled {
                                 <option value="pie">Pie</option>
                             </select>
                         </label>
+                    </div>
+                    <div class="row">
+                        <label>
+                            X Axis Label
+                            <input type="text" id="chartXLabel" placeholder="X Axis">
+                        </label>
+                        <label>
+                            Y Axis Label
+                            <input type="text" id="chartYLabel" placeholder="Y Axis">
+                        </label>
+                    </div>
+                    <div class="row">
                         <label>
                             X Axis / Category
                             <select id="chartX"></select>
                         </label>
+                        <label>
+                            Y Axis (numeric)
+                            <select id="chartY"></select>
+                        </label>
                     </div>
-                    <label>
-                        Y Axis (numeric)
-                        <select id="chartY"></select>
-                    </label>
                     <div class="actions">
                         <button class="btn" id="renderChartBtn">Render Chart</button>
+                        <button class="btn" id="downloadChartBtn">Download Chart</button>
+                        <button class="btn" id="exportChartDataBtn">Export Data</button>
                     </div>
                     <div class="chart-area">
                         <canvas id="resultChart"></canvas>
                     </div>
                     <div id="chartHint" class="helper">Charts are generated from the latest AI/SQL result set.</div>
-                </div>
-
-                <div class="card">
-                    <h3>Result Table</h3>
-                    <div class="table-wrap">
-                        <table class="table">
-                            <thead><tr id="queryHead"></tr></thead>
-                            <tbody id="queryBody"></tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
@@ -807,6 +836,7 @@ const viewTitles = {
     "data-source": "ORA AI Data Source",
     "explorer": "ORA AI Explorer",
     "ai-studio": "ORA AI Studio",
+    "visualize": "ORA AI Visualize",
     "history": "ORA AI History"
 };
 
@@ -1438,9 +1468,10 @@ function renderChart() {
     const ctx = canvas.getContext("2d");
     const { width, height } = clearCanvas(canvas, ctx);
 
+    const title = document.getElementById("chartTitle").value || `${chartType.toUpperCase()} chart: ${yCol} by ${xCol}`;
     ctx.fillStyle = getCssVar("--text", "#102336");
     ctx.font = "600 13px Sora";
-    ctx.fillText(`${chartType.toUpperCase()} chart: ${yCol} by ${xCol}`, 12, 18);
+    ctx.fillText(title, 12, 18);
 
     if (chartType === "bar") {
         drawBarChart(ctx, labels, values, width, height);
@@ -1451,6 +1482,36 @@ function renderChart() {
     }
 
     document.getElementById("chartHint").textContent = `Rendered ${chartType} chart with ${values.length} points.`;
+}
+
+function downloadChart() {
+    const canvas = document.getElementById("resultChart");
+    if (!canvas.toDataURL) {
+        alert("No chart to download. Render a chart first.");
+        return;
+    }
+    const link = document.createElement("a");
+    link.download = "chart.png";
+    link.href = canvas.toDataURL();
+    link.click();
+}
+
+function exportChartData() {
+    const columns = state.queryResult.columns;
+    const rows = state.queryResult.rows;
+    if (!columns.length || !rows.length) {
+        alert("No data to export. Run a query first.");
+        return;
+    }
+    let csv = columns.join(",") + "\n";
+    rows.forEach(row => {
+        csv += row.map(cell => `"${cell}"`).join(",") + "\n";
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.download = "chart_data.csv";
+    link.href = URL.createObjectURL(blob);
+    link.click();
 }
 
 async function refreshTables(preferred) {
@@ -1819,6 +1880,19 @@ function activateView(target) {
     document.getElementById("viewTitle").textContent = viewTitles[target] || "ORA AI Workspace";
 }
 
+function openActiveTableInAIStudio() {
+    if (!state.activeTable) {
+        setStatus("visualizeStatus", "Connect or upload a table first.", "error");
+        return;
+    }
+
+    document.getElementById("queryTable").value = state.activeTable;
+    document.getElementById("queryText").value = `Show me a summary or graph for the active table '${state.activeTable}'.`;
+    document.getElementById("answerMode").value = "auto";
+    setStatus("visualizeStatus", `Opened '${state.activeTable}' in Graph Studio.` , "success");
+    activateView("visualize");
+}
+
 function wireNavigation() {
     document.querySelectorAll(".nav-btn").forEach((button) => {
         button.addEventListener("click", () => {
@@ -1838,10 +1912,13 @@ function bindActions() {
         }
     });
     document.getElementById("loadTableBtn").addEventListener("click", loadTablePreview);
+    document.getElementById("openChartStudioBtn").addEventListener("click", openActiveTableInAIStudio);
     document.getElementById("runQueryBtn").addEventListener("click", runAIQuery);
     document.getElementById("runSqlBtn").addEventListener("click", runDirectSQL);
     document.getElementById("downloadBtn").addEventListener("click", downloadCurrentTable);
     document.getElementById("renderChartBtn").addEventListener("click", renderChart);
+    document.getElementById("downloadChartBtn").addEventListener("click", downloadChart);
+    document.getElementById("exportChartDataBtn").addEventListener("click", exportChartData);
     document.getElementById("clearHistoryBtn").addEventListener("click", () => {
         state.history = [];
         renderHistory();
@@ -1874,6 +1951,7 @@ function bindActions() {
 
 async function bootstrap() {
     wireNavigation();
+    activateView("data-source");
     bindActions();
     resetDataPanels();
     renderHistory();

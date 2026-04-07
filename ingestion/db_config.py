@@ -1,5 +1,4 @@
 import os
-import shutil
 from pathlib import Path
 
 # Production: Use environment variable or persistent app data directory
@@ -10,10 +9,9 @@ if IS_PRODUCTION:
     # Production: Use app-relative persistent directory or environment variable
     DATA_ROOT = Path(os.getenv("ORA_DATA_ROOT", "./data")).expanduser().resolve()
 else:
-    # Local development: Use ephemeral /tmp directory with cleanup
+    # Local development: Use ephemeral /tmp directory, but avoid destructive cleanup
+    # on import so reloads do not remove directories from a live worker process.
     TEMP_DIR = Path("/tmp/ora_ai_data")
-    if TEMP_DIR.exists():
-        shutil.rmtree(TEMP_DIR, ignore_errors=True)
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
     DATA_ROOT = Path(os.getenv("ORA_DATA_ROOT", str(TEMP_DIR))).expanduser().resolve()
 

@@ -3,7 +3,6 @@ from pathlib import Path
 import re
 import shutil
 import uuid
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,15 +23,9 @@ from ingestion.export_utils import export_table
 from ingestion.file_loader import load_file
 from ingestion.schema_utils import get_table_schema, list_all_tables
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    yield
-    # Only cleanup /tmp on local development, not in production
-    is_production = os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("HEROKU_APP_NAME")
-    if not is_production:
-        shutil.rmtree("/tmp/ora_ai_data", ignore_errors=True)
+app = FastAPI(title="ORA AI Data Platform API")
 
-app = FastAPI(title="ORA AI Data Platform API", lifespan=lifespan)
+BASE_DIR = Path(__file__).resolve().parent
 
 UPLOAD_DIR = DATA_ROOT / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -106,6 +99,17 @@ app.add_middleware(
 
 def get_engine():
     return create_engine(f"sqlite:///{DB_PATH}")
+
+
+def read_html_page(filename: str) -> str:
+    return (BASE_DIR / filename).read_text(encoding="utf-8")
+
+
+def ensure_runtime_dirs() -> None:
+    DATA_ROOT.mkdir(parents=True, exist_ok=True)
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def quote_identifier(identifier: str) -> str:
@@ -213,6 +217,7 @@ async def upload_file(
     table_name: str | None = Form(None),
 ):
     try:
+        ensure_runtime_dirs()
         file_ext = Path(file.filename).suffix.lower()
         if file_ext not in [".csv", ".xlsx", ".txt"]:
             raise HTTPException(status_code=400, detail="Unsupported file type")
@@ -250,6 +255,7 @@ async def connect_sqlite_db(
     active_table: str | None = Form(None),
 ):
     try:
+        ensure_runtime_dirs()
         file_ext = Path(file.filename).suffix.lower()
         if file_ext not in [".db", ".sqlite", ".sqlite3"]:
             raise HTTPException(
@@ -439,16 +445,25 @@ def run_sql(payload: dict):
 
 
 @app.get("/download")
-def download_dataset(table_name: str | None = None):
+def download_dataset(table_name: str | None = None, format: str = Query(default="csv")):
     try:
         ensure_database_exists()
         resolved_table = resolve_table_name(table_name)
-        path = export_table(resolved_table)
+        selected_format = format.lower() if format else "csv"
+        if selected_format not in {"csv", "xlsx"}:
+            selected_format = "csv"
+
+        path = export_table(resolved_table, format=selected_format)
+        media_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            if selected_format == "xlsx"
+            else "text/csv"
+        )
 
         return FileResponse(
             path=path,
             filename=path.name,
-            media_type="text/csv",
+            media_type=media_type,
         )
     except HTTPException:
         raise
@@ -489,6 +504,7 @@ def get_table(
 def cleanup_database():
     """Clean up the database and uploaded files."""
     try:
+        ensure_runtime_dirs()
         if DB_PATH.exists():
             DB_PATH.unlink(missing_ok=True)
         
@@ -509,14 +525,12 @@ def cleanup_database():
 
 @app.get("/", response_class=HTMLResponse)
 def serve_landing():
-    with open("index.html", "r", encoding="utf-8") as landing_file:
-        return landing_file.read()
+    return read_html_page("index.html")
 
 
 @app.get("/app", response_class=HTMLResponse)
 def serve_frontend():
-    with open("frontend.html", "r", encoding="utf-8") as frontend_file:
-        return frontend_file.read()
+    return read_html_page("frontend.html")
 
 
 if __name__ == "__main__":

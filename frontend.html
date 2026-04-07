@@ -728,6 +728,7 @@ textarea {
         <button class="nav-btn active" data-target="data-source">Data Source</button>
         <button class="nav-btn" data-target="explorer">Explorer</button>
         <button class="nav-btn" data-target="ai-studio">AI Studio</button>
+        <button class="nav-btn" data-target="visualize">Visualize</button>
         <button class="nav-btn" data-target="history">History</button>
         <div class="rail-footer">
             Connect data, run AI SQL, inspect tables,
@@ -894,8 +895,36 @@ textarea {
                 </div>
 
                 <div class="card">
+                    <h3>Result Table</h3>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr id="queryHead"></tr></thead>
+                            <tbody id="queryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-visualize">
+                <div class="card">
+                    <h3>Visualize Table</h3>
+                    <label>
+                        Preferred Table (optional context)
+                        <select id="visualizeTable"></select>
+                    </label>
+                    <p class="helper">Choose a table and load it into Graph Studio for quick charts and exports.</p>
+                    <div class="actions">
+                        <button class="btn" id="loadVisualizeTableBtn">Load Selected Table</button>
+                    </div>
+                    <div id="visualizeStatus" class="status info">Choose a table to load into Graph Studio.</div>
+                </div>
+                <div class="card">
                     <h3>Graph Builder</h3>
                     <div class="row">
+                        <label>
+                            Chart Title
+                            <input type="text" id="chartTitle" placeholder="Enter chart title">
+                        </label>
                         <label>
                             Chart Type
                             <select id="chartType">
@@ -904,32 +933,36 @@ textarea {
                                 <option value="pie">Pie</option>
                             </select>
                         </label>
+                    </div>
+                    <div class="row">
+                        <label>
+                            X Axis Label
+                            <input type="text" id="chartXLabel" placeholder="X Axis">
+                        </label>
+                        <label>
+                            Y Axis Label
+                            <input type="text" id="chartYLabel" placeholder="Y Axis">
+                        </label>
+                    </div>
+                    <div class="row">
                         <label>
                             X Axis / Category
                             <select id="chartX"></select>
                         </label>
+                        <label>
+                            Y Axis (numeric)
+                            <select id="chartY"></select>
+                        </label>
                     </div>
-                    <label>
-                        Y Axis (numeric)
-                        <select id="chartY"></select>
-                    </label>
                     <div class="actions">
                         <button class="btn" id="renderChartBtn">Render Chart</button>
+                        <button class="btn" id="downloadChartBtn">Download Chart</button>
+                        <button class="btn" id="exportChartDataBtn">Export Data</button>
                     </div>
                     <div class="chart-area">
                         <canvas id="resultChart"></canvas>
                     </div>
-                    <div id="chartHint" class="helper">Charts are generated from the latest AI/SQL result set.</div>
-                </div>
-
-                <div class="card">
-                    <h3>Result Table</h3>
-                    <div class="table-wrap">
-                        <table class="table">
-                            <thead><tr id="queryHead"></tr></thead>
-                            <tbody id="queryBody"></tbody>
-                        </table>
-                    </div>
+                    <div id="chartHint" class="helper">Charts are generated from the latest AI/SQL result set or the active table you load here.</div>
                 </div>
             </div>
 
@@ -961,6 +994,26 @@ const CONFIG = {
     API_BASE: window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, ''), // Use base path of the frontend
 };
 
+function buildAppUrl(path) {
+    return path.startsWith("http") ? path : `${CONFIG.API_BASE}${path}`;
+}
+
+function clearChildren(node) {
+    while (node.firstChild) {
+        node.removeChild(node.firstChild);
+    }
+}
+
+function showGraphViewAndRender(statusMessage = "") {
+    activateView("visualize");
+    if (statusMessage) {
+        setStatus("visualizeStatus", statusMessage, "success");
+    }
+    window.setTimeout(() => {
+        renderChart();
+    }, 180);
+}
+
 const state = {
     tables: [],
     activeTable: null,
@@ -977,6 +1030,7 @@ const viewTitles = {
     "data-source": "ORA AI Data Source",
     "explorer": "ORA AI Explorer",
     "ai-studio": "ORA AI Studio",
+    "visualize": "ORA AI Visualize",
     "history": "ORA AI History"
 };
 
@@ -1016,11 +1070,13 @@ function setButtonLoading(buttonId, loading = true, text = null) {
     })();
 
     if (loading) {
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = button.textContent.trim();
+        }
         button.classList.add('loading');
-        spinner.style.display = 'block';
-        if (text) button.dataset.originalText = button.textContent;
         button.textContent = text || 'Processing...';
-        if (text) button.appendChild(spinner);
+        button.appendChild(spinner);
+        spinner.style.display = 'block';
     } else {
         button.classList.remove('loading');
         spinner.style.display = 'none';
@@ -1033,22 +1089,22 @@ function setButtonLoading(buttonId, loading = true, text = null) {
 
 function setStatus(id, message, type = "info") {
     const el = document.getElementById(id);
+    if (!el) {
+        return;
+    }
     el.className = `status ${type}`;
     el.textContent = message;
     el.style.animation = 'none';
     el.offsetHeight; // Trigger reflow
-    el.style.animation = 'bounce-in 400ms ease';
+    el.style.animation = 'slide-in 300ms ease both';
 }
 
 async function apiRequest(url, options = {}) {
-    const fullUrl = url.startsWith('http') ? url : `${CONFIG.API_BASE}${url}`;
-    console.log('Making API request to:', fullUrl, options);
+    const fullUrl = buildAppUrl(url);
     try {
         const response = await fetch(fullUrl, options);
-        console.log('API response status:', response.status, response.statusText);
         const contentType = response.headers.get("content-type") || "";
         const payload = contentType.includes("application/json") ? await response.json() : null;
-        console.log('API response payload:', payload);
 
         if (!response.ok) {
             let errorText = "Request failed";
@@ -1062,7 +1118,6 @@ async function apiRequest(url, options = {}) {
                     errorSuggestion = payload.suggestion || "";
                 }
             }
-            console.error('API request failed:', errorText, errorSuggestion);
             const error = new Error(errorText);
             if (errorSuggestion) {
                 error.suggestion = errorSuggestion;
@@ -1073,7 +1128,6 @@ async function apiRequest(url, options = {}) {
 
         return payload;
     } catch (error) {
-        console.error('API request error:', error);
         throw error;
     }
 }
@@ -1160,7 +1214,7 @@ function setKpis() {
 
 function setSelectOptions(selectId, options, selected) {
     const select = document.getElementById(selectId);
-    select.innerHTML = "";
+    clearChildren(select);
 
     if (!options.length) {
         const option = document.createElement("option");
@@ -1191,6 +1245,7 @@ function syncTableSelectors() {
     setSelectOptions("explorerTable", tableOptions, active);
     setSelectOptions("queryTable", tableOptions, active);
     setSelectOptions("sqlTable", tableOptions, active);
+    setSelectOptions("visualizeTable", tableOptions, active);
 
     if (state.activeTable) {
         document.getElementById("uploadTable").value = state.activeTable;
@@ -1214,10 +1269,17 @@ function setDatabaseDependentState(enabled) {
         "sqlInputType",
         "rawSql",
         "runSqlBtn",
+        "visualizeTable",
+        "loadVisualizeTableBtn",
+        "chartTitle",
         "chartType",
+        "chartXLabel",
         "chartX",
+        "chartYLabel",
         "chartY",
-        "renderChartBtn"
+        "renderChartBtn",
+        "downloadChartBtn",
+        "exportChartDataBtn"
     ].forEach((id) => {
         const element = document.getElementById(id);
         if (element) {
@@ -1240,10 +1302,14 @@ function resetDataPanels() {
     document.getElementById("generatedSql").textContent = "";
     document.getElementById("queryText").value = "";
     document.getElementById("rawSql").value = "";
+    document.getElementById("chartTitle").value = "";
+    document.getElementById("chartXLabel").value = "";
+    document.getElementById("chartYLabel").value = "";
     document.getElementById("chartHint").textContent = "Connect a database or upload a file to enable charting.";
     setStatus("tableStatus", "No table connected yet.", "info");
     setStatus("queryStatus", "Connect a database or upload data to start asking questions.", "info");
     setStatus("sqlStatus", "Connect a database or upload data to run SQL.", "info");
+    setStatus("visualizeStatus", "Choose a table to load into Graph Studio.", "info");
     syncTableSelectors();
     setDatabaseDependentState(false);
 }
@@ -1260,6 +1326,9 @@ function getCurrentChartConfig() {
         chartType: document.getElementById("chartType").value,
         x: document.getElementById("chartX").value,
         y: document.getElementById("chartY").value,
+        title: document.getElementById("chartTitle").value,
+        xLabel: document.getElementById("chartXLabel").value,
+        yLabel: document.getElementById("chartYLabel").value,
     };
 }
 
@@ -1281,12 +1350,21 @@ function applyChartConfig(config) {
     if (config.y && Array.from(chartY.options).some((option) => option.value === config.y)) {
         chartY.value = config.y;
     }
+    if (typeof config.title === "string") {
+        document.getElementById("chartTitle").value = config.title;
+    }
+    if (typeof config.xLabel === "string") {
+        document.getElementById("chartXLabel").value = config.xLabel;
+    }
+    if (typeof config.yLabel === "string") {
+        document.getElementById("chartYLabel").value = config.yLabel;
+    }
 }
 
 function renderHistory() {
     const container = document.getElementById("historyList");
     const emptyState = document.getElementById("historyEmpty");
-    container.innerHTML = "";
+    clearChildren(container);
 
     if (!state.history.length) {
         emptyState.style.display = "block";
@@ -1302,12 +1380,25 @@ function renderHistory() {
             ? `Error: ${item.answer}`
             : `${item.answer} (${item.rows} rows, ${item.columns} columns)`;
 
-        wrapper.innerHTML = `
-            <h4>Q${state.history.length - index}: ${item.question}</h4>
-            <div class="history-meta">${item.time} | View: ${item.mode}</div>
-            <div class="history-meta">Answer: ${answerSummary}</div>
-            <pre class="sql-block">${item.sql || ""}</pre>
-        `;
+        const title = document.createElement("h4");
+        title.textContent = `Q${state.history.length - index}: ${item.question}`;
+
+        const meta = document.createElement("div");
+        meta.className = "history-meta";
+        meta.textContent = `${item.time} | View: ${item.mode}`;
+
+        const answer = document.createElement("div");
+        answer.className = "history-meta";
+        answer.textContent = `Answer: ${answerSummary}`;
+
+        const sql = document.createElement("pre");
+        sql.className = "sql-block";
+        sql.textContent = item.sql || "";
+
+        wrapper.appendChild(title);
+        wrapper.appendChild(meta);
+        wrapper.appendChild(answer);
+        wrapper.appendChild(sql);
         wrapper.title = "Double-click to reopen this result";
         wrapper.addEventListener("dblclick", () => openHistoryItem(index));
         container.appendChild(wrapper);
@@ -1344,16 +1435,16 @@ function openHistoryItem(index) {
     }
 
     if ((item.mode === "graph" || item.mode === "auto") && state.queryResult.rows.length) {
-        renderChart();
+        showGraphViewAndRender("Loaded graph-ready result from history.");
     } else {
         const canvas = document.getElementById("resultChart");
         const ctx = canvas.getContext("2d");
         clearCanvas(canvas, ctx);
         document.getElementById("chartHint").textContent = "Table mode restored from history.";
+        activateView("ai-studio");
     }
 
     setStatus("queryStatus", "Loaded result from history.", "success");
-    activateView("ai-studio");
 }
 
 function updateSqlInputTypeUI() {
@@ -1376,7 +1467,7 @@ function updateSqlInputTypeUI() {
 function renderSchema(schema) {
     const container = document.getElementById("schemaGrid");
     const hint = document.getElementById("schemaHint");
-    container.innerHTML = "";
+    clearChildren(container);
 
     if (!schema || !schema.length) {
         hint.textContent = "No schema loaded yet.";
@@ -1388,7 +1479,15 @@ function renderSchema(schema) {
     schema.forEach((column) => {
         const block = document.createElement("div");
         block.className = "schema-pill";
-        block.innerHTML = `<strong>${column.name}</strong><span>${column.type}</span>`;
+
+        const name = document.createElement("strong");
+        name.textContent = column.name;
+
+        const type = document.createElement("span");
+        type.textContent = column.type;
+
+        block.appendChild(name);
+        block.appendChild(type);
         container.appendChild(block);
     });
 }
@@ -1396,8 +1495,8 @@ function renderSchema(schema) {
 function renderTable(headId, bodyId, columns, rows) {
     const head = document.getElementById(headId);
     const body = document.getElementById(bodyId);
-    head.innerHTML = "";
-    body.innerHTML = "";
+    clearChildren(head);
+    clearChildren(body);
 
     if (!columns || !columns.length) {
         return;
@@ -1444,8 +1543,8 @@ function firstNumericColumn(columns, rows) {
 function setupChartSelectors(columns, rows) {
     const xSelect = document.getElementById("chartX");
     const ySelect = document.getElementById("chartY");
-    xSelect.innerHTML = "";
-    ySelect.innerHTML = "";
+    clearChildren(xSelect);
+    clearChildren(ySelect);
 
     columns.forEach((column) => {
         const xOption = document.createElement("option");
@@ -1487,6 +1586,72 @@ function drawAxes(ctx, width, height, padding) {
     ctx.lineTo(padding, height - padding);
     ctx.lineTo(width - padding, height - padding);
     ctx.stroke();
+}
+
+function drawAxisLabels(ctx, width, height, padding, xLabel, yLabel) {
+    ctx.fillStyle = getCssVar("--muted", "#536a82");
+    ctx.font = "11px Manrope";
+
+    ctx.fillText(xLabel, Math.max(padding, width / 2 - ctx.measureText(xLabel).width / 2), height - 8);
+
+    ctx.save();
+    ctx.translate(14, height / 2 + ctx.measureText(yLabel).width / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(yLabel, 0, 0);
+    ctx.restore();
+}
+
+function getChartFieldValue(id, fallback = "") {
+    const element = document.getElementById(id);
+    const value = element ? element.value.trim() : "";
+    return value || fallback;
+}
+
+function getChartSeries(maxRows = 60) {
+    const columns = state.queryResult.columns;
+    const rows = state.queryResult.rows;
+
+    if (!columns.length || !rows.length) {
+        return { error: "Run a query or load the active table before charting." };
+    }
+
+    const chartType = document.getElementById("chartType").value;
+    const xCol = document.getElementById("chartX").value;
+    const yCol = document.getElementById("chartY").value;
+
+    const xIndex = columns.indexOf(xCol);
+    const yIndex = columns.indexOf(yCol);
+
+    if (xIndex < 0 || yIndex < 0) {
+        return { error: "Select valid X and Y columns." };
+    }
+
+    const labels = [];
+    const values = [];
+
+    rows.slice(0, maxRows).forEach((row) => {
+        const yNum = toNumber(row[yIndex]);
+        if (!Number.isFinite(yNum)) {
+            return;
+        }
+        labels.push(row[xIndex]);
+        values.push(yNum);
+    });
+
+    if (!values.length) {
+        return { error: "Selected Y column has no numeric values." };
+    }
+
+    return {
+        chartType,
+        xCol,
+        yCol,
+        labels,
+        values,
+        title: getChartFieldValue("chartTitle", `${chartType.toUpperCase()} chart: ${yCol} by ${xCol}`),
+        xAxisLabel: getChartFieldValue("chartXLabel", xCol),
+        yAxisLabel: getChartFieldValue("chartYLabel", yCol),
+    };
 }
 
 function drawBarChart(ctx, labels, values, width, height) {
@@ -1604,60 +1769,35 @@ function drawPieChart(ctx, labels, values, width, height) {
 }
 
 function renderChart() {
-    const columns = state.queryResult.columns;
-    const rows = state.queryResult.rows;
-
-    if (!columns.length || !rows.length) {
-        document.getElementById("chartHint").textContent = "Run a query that returns rows before charting.";
-        return;
-    }
-
-    const chartType = document.getElementById("chartType").value;
-    const xCol = document.getElementById("chartX").value;
-    const yCol = document.getElementById("chartY").value;
-
-    const xIndex = columns.indexOf(xCol);
-    const yIndex = columns.indexOf(yCol);
-
-    if (xIndex < 0 || yIndex < 0) {
-        document.getElementById("chartHint").textContent = "Select valid X and Y columns.";
-        return;
-    }
-
-    const labels = [];
-    const values = [];
-
-    rows.slice(0, 60).forEach((row) => {
-        const yNum = toNumber(row[yIndex]);
-        if (!Number.isFinite(yNum)) {
-            return;
-        }
-        labels.push(row[xIndex]);
-        values.push(yNum);
-    });
-
-    if (!values.length) {
-        document.getElementById("chartHint").textContent = "Selected Y column has no numeric values.";
+    const series = getChartSeries();
+    if (series.error) {
+        document.getElementById("chartHint").textContent = series.error;
         return;
     }
 
     const canvas = document.getElementById("resultChart");
+    if (!canvas.clientWidth || !canvas.clientHeight) {
+        document.getElementById("chartHint").textContent = "Open the Visualize view to render the chart.";
+        return;
+    }
     const ctx = canvas.getContext("2d");
     const { width, height } = clearCanvas(canvas, ctx);
 
     ctx.fillStyle = getCssVar("--text", "#102336");
     ctx.font = "600 13px Sora";
-    ctx.fillText(`${chartType.toUpperCase()} chart: ${yCol} by ${xCol}`, 12, 18);
+    ctx.fillText(series.title, 12, 18);
 
-    if (chartType === "bar") {
-        drawBarChart(ctx, labels, values, width, height);
-    } else if (chartType === "line") {
-        drawLineChart(ctx, labels, values, width, height);
+    if (series.chartType === "bar") {
+        drawBarChart(ctx, series.labels, series.values, width, height);
+        drawAxisLabels(ctx, width, height, 36, series.xAxisLabel, series.yAxisLabel);
+    } else if (series.chartType === "line") {
+        drawLineChart(ctx, series.labels, series.values, width, height);
+        drawAxisLabels(ctx, width, height, 36, series.xAxisLabel, series.yAxisLabel);
     } else {
-        drawPieChart(ctx, labels, values, width, height);
+        drawPieChart(ctx, series.labels, series.values, width, height);
     }
 
-    document.getElementById("chartHint").textContent = `Rendered ${chartType} chart with ${values.length} points.`;
+    document.getElementById("chartHint").textContent = `Rendered ${series.chartType} chart with ${series.values.length} points.`;
 }
 
 async function refreshTables(preferred) {
@@ -1735,20 +1875,16 @@ async function loadSchema(tableName) {
 }
 
 async function uploadDataset() {
-    console.log('uploadDataset called');
     const fileInput = document.getElementById("uploadFile");
     const file = fileInput.files[0];
-    console.log('Selected file:', file);
 
     if (!file) {
-        console.log('No file selected');
         setStatus("uploadStatus", "Select a file before upload.", "error");
         return;
     }
 
     const delimiter = document.getElementById("uploadDelimiter").value;
     const tableName = document.getElementById("uploadTable").value.trim();
-    console.log('Delimiter:', delimiter, 'Table name:', tableName);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -1756,8 +1892,6 @@ async function uploadDataset() {
     if (tableName) {
         formData.append("table_name", tableName);
     }
-
-    console.log('FormData prepared, making API call...');
 
     try {
         setButtonLoading("uploadBtn", true, "Uploading...");
@@ -1767,7 +1901,6 @@ async function uploadDataset() {
             body: formData,
         });
 
-        console.log('Upload successful:', payload);
         state.hasDatabase = true;
         state.activeTable = payload.table_name;
         setStatus(
@@ -1779,7 +1912,6 @@ async function uploadDataset() {
         await refreshTables(payload.table_name);
         await loadTablePreview();
     } catch (error) {
-        console.error('Upload failed:', error);
         setStatus("uploadStatus", error.message, "error");
     } finally {
         setButtonLoading("uploadBtn", false);
@@ -1907,7 +2039,7 @@ async function runAIQuery() {
             );
 
             if (answerMode === "graph" || answerMode === "auto") {
-                renderChart();
+                showGraphViewAndRender("Loaded latest AI result into Graph Studio.");
             } else {
                 const canvas = document.getElementById("resultChart");
                 const ctx = canvas.getContext("2d");
@@ -2002,7 +2134,7 @@ async function runDirectSQL() {
         if (payload.has_result_set && state.queryResult.rows.length) {
             setStatus("sqlStatus", `SQL returned ${state.queryResult.rows.length} rows.`, "success");
             if (answerMode === "graph" || answerMode === "auto") {
-                renderChart();
+                showGraphViewAndRender("Loaded latest SQL result into Graph Studio.");
             } else {
                 const canvas = document.getElementById("resultChart");
                 const ctx = canvas.getContext("2d");
@@ -2061,7 +2193,84 @@ function downloadCurrentTable() {
         return;
     }
 
-    window.location.href = `/download?table_name=${encodeURIComponent(selectedTable)}`;
+    window.location.href = buildAppUrl(`/download?table_name=${encodeURIComponent(selectedTable)}`);
+}
+
+async function loadSelectedTableInGraphStudio() {
+    const selectedTable = document.getElementById("visualizeTable").value || state.activeTable;
+
+    if (!state.hasDatabase || !selectedTable) {
+        setStatus("visualizeStatus", "Choose a table after connecting or uploading data.", "error");
+        return;
+    }
+
+    try {
+        setButtonLoading("loadVisualizeTableBtn", true, "Loading...");
+        setStatus("visualizeStatus", `Loading '${selectedTable}' into Graph Studio...`, "info");
+        const payload = await apiRequest(`/table?table_name=${encodeURIComponent(selectedTable)}&limit=200`);
+
+        state.queryResult = {
+            columns: payload.columns || [],
+            rows: payload.rows || [],
+        };
+        state.activeTable = payload.table_name || state.activeTable;
+
+        renderTable("queryHead", "queryBody", state.queryResult.columns, state.queryResult.rows);
+        setupChartSelectors(state.queryResult.columns, state.queryResult.rows);
+        syncTableSelectors();
+        await loadSchema(state.activeTable);
+
+        if (!document.getElementById("chartTitle").value.trim()) {
+            document.getElementById("chartTitle").value = `${state.activeTable} preview`;
+        }
+
+        renderChart();
+        setStatus("visualizeStatus", `Loaded '${state.activeTable}' into Graph Studio.`, "success");
+    } catch (error) {
+        setStatus("visualizeStatus", error.message, "error");
+    } finally {
+        setButtonLoading("loadVisualizeTableBtn", false);
+    }
+}
+
+function downloadChart() {
+    if (!state.queryResult.columns.length || !state.queryResult.rows.length) {
+        setStatus("visualizeStatus", "Render a chart before downloading it.", "error");
+        return;
+    }
+
+    const canvas = document.getElementById("resultChart");
+    const link = document.createElement("a");
+    const filenameBase = (state.activeTable || "chart").replace(/\s+/g, "_");
+    link.download = `${filenameBase}_chart.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    setStatus("visualizeStatus", "Chart downloaded successfully.", "success");
+}
+
+function exportChartData() {
+    const series = getChartSeries(5000);
+    if (series.error) {
+        setStatus("visualizeStatus", series.error, "error");
+        return;
+    }
+
+    const csvRows = [
+        [series.xAxisLabel, series.yAxisLabel],
+        ...series.labels.map((label, index) => [label, series.values[index]]),
+    ];
+    const csv = csvRows
+        .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    const filenameBase = (state.activeTable || "chart_data").replace(/\s+/g, "_");
+    link.download = `${filenameBase}_chart_data.csv`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+    setStatus("visualizeStatus", "Chart data exported successfully.", "success");
 }
 
 function activateView(target) {
@@ -2112,10 +2321,13 @@ function bindActions() {
     });
     document.getElementById("cleanupBtn").addEventListener("click", cleanupDatabase);
     document.getElementById("loadTableBtn").addEventListener("click", loadTablePreview);
+    document.getElementById("loadVisualizeTableBtn").addEventListener("click", loadSelectedTableInGraphStudio);
     document.getElementById("runQueryBtn").addEventListener("click", runAIQuery);
     document.getElementById("runSqlBtn").addEventListener("click", runDirectSQL);
     document.getElementById("downloadBtn").addEventListener("click", downloadCurrentTable);
     document.getElementById("renderChartBtn").addEventListener("click", renderChart);
+    document.getElementById("downloadChartBtn").addEventListener("click", downloadChart);
+    document.getElementById("exportChartDataBtn").addEventListener("click", exportChartData);
     document.getElementById("clearHistoryBtn").addEventListener("click", () => {
         state.history = [];
         renderHistory();
@@ -2133,6 +2345,11 @@ function bindActions() {
     });
 
     document.getElementById("sqlTable").addEventListener("change", (event) => {
+        state.activeTable = event.target.value;
+        syncTableSelectors();
+    });
+
+    document.getElementById("visualizeTable").addEventListener("change", (event) => {
         state.activeTable = event.target.value;
         syncTableSelectors();
     });
