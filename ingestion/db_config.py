@@ -2,20 +2,28 @@ import os
 import shutil
 from pathlib import Path
 
-# Use a fixed temp directory for data
-TEMP_DIR = Path("/tmp/ora_ai_data")
+# Production: Use environment variable or persistent app data directory
+# Local development: Use /tmp with cleanup
+IS_PRODUCTION = os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("HEROKU_APP_NAME")
 
-# Clean up on import if exists
-if TEMP_DIR.exists():
-    shutil.rmtree(TEMP_DIR)
+if IS_PRODUCTION:
+    # Production: Use app-relative persistent directory or environment variable
+    DATA_ROOT = Path(os.getenv("ORA_DATA_ROOT", "./data")).expanduser().resolve()
+else:
+    # Local development: Use ephemeral /tmp directory with cleanup
+    TEMP_DIR = Path("/tmp/ora_ai_data")
+    if TEMP_DIR.exists():
+        shutil.rmtree(TEMP_DIR, ignore_errors=True)
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_ROOT = Path(os.getenv("ORA_DATA_ROOT", str(TEMP_DIR))).expanduser().resolve()
 
-TEMP_DIR.mkdir(parents=True, exist_ok=True)
-
-# Optional runtime data root for cloud deployments (Railway volume mount path).
-# Falls back to temp dir for local development.
-DATA_ROOT = Path(os.getenv("ORA_DATA_ROOT", str(TEMP_DIR))).expanduser().resolve()
-
+# Ensure directories exist
 DB_DIR = DATA_ROOT / "db"
+EXPORT_DIR = DATA_ROOT / "exports"
+UPLOAD_DIR = DATA_ROOT / "uploads"
+
 DB_DIR.mkdir(parents=True, exist_ok=True)
+EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 DB_PATH = DB_DIR / "datasets.db"

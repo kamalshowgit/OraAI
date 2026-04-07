@@ -38,6 +38,9 @@ In your Render service settings, add:
 
 - `GROQ_API_KEY=your_real_key_here`
 - Optional: `ALLOWED_ORIGINS=https://your-app.onrender.com`
+- Optional: `ORA_DATA_ROOT=/var/data/ora_ai` (for custom persistent storage location)
+
+**Data Persistence Note**: The app automatically creates a `./data` directory for persistent storage on Render. Uploaded files and databases are stored there and will persist across restarts.
 
 ## 6. Deploy the Service
 
@@ -54,8 +57,9 @@ In your Render service settings, add:
 ## Notes
 
 - Render uses the `$PORT` environment variable.
-- Local temporary storage is not persistent in long-term production.
-- For production, use an external database if you need durable data storage.
+- **Data Persistence**: The app now uses a persistent `./data` directory (relative to app root) for Render deployments. Uploaded files and databases persist across restarts.
+- Local development uses `/tmp/ora_ai_data` which is cleaned up automatically on shutdown.
+- Session data (uploaded datasets, queries) are stored locally per instance. For multi-instance deployments, consider using external storage.
 
 ## Troubleshooting
 

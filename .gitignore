@@ -18,6 +18,12 @@ __pycache__/
 
 # OS files
 .DS_Store
+
+# Application data directory (local and production)
+data/
+db/
+uploads/
+exports/
 Thumbs.db
 
 # Logs

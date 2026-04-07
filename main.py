@@ -21,8 +21,10 @@ from ingestion.schema_utils import get_table_schema, list_all_tables
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
-    # Cleanup on shutdown
-    shutil.rmtree("/tmp/ora_ai_data", ignore_errors=True)
+    # Only cleanup /tmp on local development, not in production
+    is_production = os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("HEROKU_APP_NAME")
+    if not is_production:
+        shutil.rmtree("/tmp/ora_ai_data", ignore_errors=True)
 
 app = FastAPI(title="ORA AI Data Platform API", lifespan=lifespan)
 
