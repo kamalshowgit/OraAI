@@ -396,6 +396,81 @@ textarea {
     border-color: #f5c8c8;
 }
 
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 35, 54, 0.58);
+    padding: 20px;
+}
+
+.modal-card {
+    width: min(560px, 100%);
+    background: var(--panel);
+    border-radius: 22px;
+    box-shadow: 0 32px 90px rgba(16, 47, 79, 0.18);
+    border: 1px solid rgba(15, 142, 123, 0.12);
+    overflow: hidden;
+}
+
+.modal-header,
+.modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 22px 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.2;
+    color: var(--text);
+}
+
+.modal-close {
+    border: none;
+    background: var(--panel-2);
+    color: var(--text);
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.modal-body {
+    padding: 0 22px 18px;
+}
+
+.modal-body p {
+    margin: 0 0 12px;
+    color: var(--muted);
+    white-space: pre-wrap;
+}
+
+.modal-suggestion {
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--info-soft);
+    border: 1px solid rgba(28, 95, 179, 0.15);
+    color: var(--info);
+    font-size: 13px;
+}
+
+.modal-actions {
+    padding: 0 22px 20px;
+}
+
+.modal-actions .btn {
+    min-width: 120px;
+}
+
 .table-wrap {
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -976,9 +1051,24 @@ async function apiRequest(url, options = {}) {
         console.log('API response payload:', payload);
 
         if (!response.ok) {
-            const errorText = payload?.detail || "Request failed";
-            console.error('API request failed:', errorText);
-            throw new Error(errorText);
+            let errorText = "Request failed";
+            let errorSuggestion = "";
+            if (payload) {
+                if (typeof payload.detail === "object" && payload.detail !== null) {
+                    errorText = payload.detail.message || JSON.stringify(payload.detail);
+                    errorSuggestion = payload.detail.suggestion || payload.suggestion || "";
+                } else {
+                    errorText = payload.detail || payload.message || errorText;
+                    errorSuggestion = payload.suggestion || "";
+                }
+            }
+            console.error('API request failed:', errorText, errorSuggestion);
+            const error = new Error(errorText);
+            if (errorSuggestion) {
+                error.suggestion = errorSuggestion;
+            }
+            error.payload = payload;
+            throw error;
         }
 
         return payload;
@@ -986,6 +1076,58 @@ async function apiRequest(url, options = {}) {
         console.error('API request error:', error);
         throw error;
     }
+}
+
+function showDecisionModal(title, message, suggestion = "", retryCallback = null) {
+    const overlay = document.getElementById("decisionModalOverlay");
+    const titleEl = document.getElementById("decisionModalTitle");
+    const messageEl = document.getElementById("decisionModalMessage");
+    const suggestionEl = document.getElementById("decisionModalSuggestion");
+    const confirmBtn = document.getElementById("decisionModalConfirm");
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    if (suggestion) {
+        suggestionEl.textContent = suggestion;
+        suggestionEl.style.display = "block";
+    } else {
+        suggestionEl.style.display = "none";
+    }
+
+    confirmBtn.textContent = retryCallback ? "Retry" : "OK";
+    confirmBtn.onclick = async () => {
+        closeDecisionModal();
+        if (retryCallback) {
+            await retryCallback();
+        }
+    };
+
+    overlay.style.display = "flex";
+}
+
+function closeDecisionModal() {
+    document.getElementById("decisionModalOverlay").style.display = "none";
+}
+
+function prepareSqlEditorForError(error) {
+    const payload = error.payload || {};
+    const sql = payload.detail?.generated_sql || payload.detail?.executed_sql || payload.generated_sql || payload.executed_sql;
+    if (sql) {
+        document.getElementById("generatedSql").textContent = sql;
+        const rawSqlInput = document.getElementById("rawSql");
+        if (rawSqlInput) {
+            rawSqlInput.value = sql;
+            rawSqlInput.focus();
+            rawSqlInput.select();
+        }
+    }
+}
+
+function handleSqlError(error, retryCallback = null) {
+    prepareSqlEditorForError(error);
+    const message = error.message || "An issue occurred while running SQL.";
+    const suggestion = error.suggestion || "If this is generated SQL, try editing or resubmitting the same query.";
+    showDecisionModal("SQL Action Needed", message, suggestion, retryCallback);
 }
 
 function setKpis() {
@@ -1802,6 +1944,7 @@ async function runAIQuery() {
             chartConfig: getCurrentChartConfig()
         });
     } catch (error) {
+        handleSqlError(error, runAIQuery);
         setStatus("queryStatus", error.message, "error");
         addHistoryEntry({
             question: query,
@@ -1891,6 +2034,7 @@ async function runDirectSQL() {
             chartConfig: getCurrentChartConfig()
         });
     } catch (error) {
+        handleSqlError(error, runDirectSQL);
         setStatus("sqlStatus", error.message, "error");
         addHistoryEntry({
             question: sqlInput,
@@ -2015,5 +2159,22 @@ async function bootstrap() {
 
 bootstrap();
 </script>
+
+<div id="decisionModalOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="decisionModalTitle">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="decisionModalTitle">Action Required</h3>
+            <button class="modal-close" onclick="closeDecisionModal()" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="decisionModalMessage">A SQL issue was detected.</p>
+            <p id="decisionModalSuggestion" class="modal-suggestion"></p>
+        </div>
+        <div class="modal-actions">
+            <button id="decisionModalConfirm" class="btn primary">Retry</button>
+            <button id="decisionModalCancel" class="btn secondary" onclick="closeDecisionModal()">Cancel</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

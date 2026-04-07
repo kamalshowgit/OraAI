@@ -49,6 +49,7 @@ def build_sql_prompt(
                 "Rules:\n"
                 "- Output ONLY executable SQLite SQL\n"
                 "- Use only the tables and columns provided\n"
+                "- Always quote table or column names that contain spaces or special characters using backticks\n"
                 "- You MAY use SELECT, UPDATE, DELETE, INSERT, CREATE TABLE, ALTER TABLE\n"
                 "- Multiple SQL statements are allowed and must be separated by semicolons\n"
                 "- If creating a table, prepend it with DROP TABLE IF EXISTS <name>;\n"

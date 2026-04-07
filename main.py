@@ -9,8 +9,14 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 
-from agent.sql_agent import generate_sql, is_safe_sql
+from agent.sql_agent import (
+    build_schema_map,
+    generate_sql,
+    is_safe_sql,
+    normalize_ai_identifiers,
+)
 from agent.sql_executor import execute_sql
 from ingestion.csv_excel_to_sqlite import dataframe_to_sqlite
 from ingestion.db_config import DB_PATH, DATA_ROOT, EXPORT_DIR
@@ -39,6 +45,49 @@ DELIMITER_MAP = {
     "pipe": "|",
     "semicolon": ";",
 }
+
+SQL_ERROR_SUGGESTIONS = {
+    "no such column": (
+        "Column names may be incorrect, especially if they contain spaces or special characters. "
+        "Use exact schema names and quote them if needed."
+    ),
+    "syntax error": (
+        "There is a SQL syntax error. Review the generated or typed SQL for missing commas, parentheses, or semicolons."
+    ),
+    "already exists": (
+        "The table already exists. Use a different output table name or drop the existing table first."
+    ),
+}
+
+def extract_sql_error_context(message: str) -> str:
+    match = re.search(r"no such column:\s*([^\s]+)", message, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def build_error_payload(exc: Exception, sql: str | None = None) -> dict[str, str]:
+    message = str(exc.__cause__ or exc)
+    lower_message = message.lower()
+    suggestion = ""
+    missing_column = extract_sql_error_context(message)
+    for key, text in SQL_ERROR_SUGGESTIONS.items():
+        if key in lower_message:
+            suggestion = text
+            break
+
+    if missing_column:
+        suggestion = (
+            f"The column '{missing_column}' was not found in the current schema. "
+            "Check spelling, quote the exact column name, or use a valid column from the schema."
+        )
+
+    payload: dict[str, str] = {"message": message}
+    if suggestion:
+        payload["suggestion"] = suggestion
+    if sql:
+        payload["generated_sql"] = sql
+    return payload
 
 ALLOWED_ORIGINS = [
     origin.strip()
@@ -294,6 +343,7 @@ def run_query(payload: dict):
 
         selected_table = payload.get("table_name")
         resolved_table = resolve_table_name(selected_table) if selected_table else None
+        sql = None
         try:
             sql = generate_sql(user_query, resolved_table)
         except RuntimeError as exc:
@@ -317,6 +367,8 @@ def run_query(payload: dict):
     except HTTPException:
         raise
     except Exception as exc:
+        if isinstance(exc, OperationalError):
+            raise HTTPException(status_code=400, detail=build_error_payload(exc, sql)) from exc
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
@@ -342,6 +394,8 @@ def run_sql(payload: dict):
         generated_sql = None
         executable_sql = input_text
 
+        schema_map = build_schema_map()
+
         if input_type == "english":
             try:
                 generated_sql = generate_sql(input_text, resolved_table)
@@ -350,6 +404,8 @@ def run_sql(payload: dict):
             except Exception as exc:
                 raise HTTPException(status_code=400, detail=f"AI SQL generation failed: {str(exc)}") from exc
             executable_sql = generated_sql
+        elif input_type == "sql":
+            executable_sql = normalize_ai_identifiers(executable_sql, schema_map)
 
         if not is_safe_sql(executable_sql):
             raise HTTPException(
@@ -377,6 +433,8 @@ def run_sql(payload: dict):
     except HTTPException:
         raise
     except Exception as exc:
+        if isinstance(exc, OperationalError):
+            raise HTTPException(status_code=400, detail=build_error_payload(exc, executable_sql)) from exc
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
