@@ -1,6 +1,6 @@
-# 🎯 ORA AI - PythonAnywhere Deployment Summary
+# 🎯 ORA AI - Render Deployment Summary
 
-Your application is **100% ready** for PythonAnywhere deployment! ✓
+Your application is ready for Render deployment.
 
 ---
 
@@ -8,105 +8,65 @@ Your application is **100% ready** for PythonAnywhere deployment! ✓
 
 ### ✅ Files Created/Updated:
 
-1. **wsgi.py** - WSGI entry point for PythonAnywhere
-2. **requirements.txt** - Updated with production dependencies (gunicorn, whitenoise)
-3. **PYTHONANYWHERE_DEPLOY.md** - Detailed 10-step deployment guide
-4. **DEPLOY_CHECKLIST.md** - Quick reference checklist
-5. **check_deployment.py** - Automated deployment readiness checker
+1. **render.yaml** - Render service configuration
+2. **requirements.txt** - Cleaned unused legacy deployment packages
+3. **RENDER_DEPLOY.md** - Detailed Render deployment guide
+4. **DEPLOY_CHECKLIST.md** - Quick reference Render checklist
+5. **check_deployment.py** - Render-ready verification helper
 
 ### ✅ Verification Passed:
 
-- ✓ All Python packages installed
-- ✓ All essential files present
-- ✓ .env configured with GROQ_API_KEY
-- ✓ main.py properly configured
-- ✓ wsgi.py correctly set up
+- ✓ All required Python packages installed
+- ✓ Essential files present
+- ✓ `main.py` properly configured
+- ✓ `render.yaml` configured for uvicorn
 
 ---
 
 ## Quick Start (5 Minutes)
 
-### 1. **Sign up at PythonAnywhere**
-```
-https://www.pythonanywhere.com
-Sign up (FREE account) → Verify email
-```
+### 1. **Push your repo to GitHub/GitLab/Bitbucket**
 
-### 2. **Clone in Bash Console**
-```bash
-cd /home/YOUR_USERNAME
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
-```
+### 2. **Create a Render Web Service**
+- Visit: https://render.com
+- Create a new Web Service
+- Connect the repository
+- Select the branch to deploy
 
-### 3. **Setup Virtual Environment**
+### 3. **Set Build & Start Commands**
+- Build command:
 ```bash
-mkvirtualenv --python=/usr/bin/python3.10 oraai
 pip install -r requirements.txt
 ```
-
-### 4. **Configure Web App**
-- Go to **Web** tab
-- Click **"Add new web app"**
-- Choose **"Manual configuration"**
-- Select **"Python 3.10"**
-
-### 5. **Update WSGI Configuration**
-- Click the **WSGI configuration file** link
-- Copy content from **wsgi.py** in your repo
-- **Replace YOUR_USERNAME** with your actual PythonAnywhere username
-- **Save** (Ctrl+S)
-
-### 6. **Set Virtualenv & Source**
-In the **Web** tab, modify:
-```
-Virtualenv: /home/YOUR_USERNAME/.virtualenvs/oraai
-Source code: /home/YOUR_USERNAME/YOUR_REPO
-```
-
-### 7. **Configure Environment Variables**
+- Start command:
 ```bash
-# In Bash console:
-nano /home/YOUR_USERNAME/YOUR_REPO/.env
+uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
-Update:
-```
-GROQ_API_KEY=your_real_key_here
-ALLOWED_ORIGINS=https://YOUR_USERNAME.pythonanywhere.com
-```
+### 4. **Add Environment Variables**
+- `GROQ_API_KEY=your_real_key_here`
+- Optional: `ALLOWED_ORIGINS=https://your-app.onrender.com`
 
-Save: `Ctrl+X` → `Y` → `Enter`
-
-### 8. **Reload Your App**
-- Go to **Web** tab
-- Click the green **"Reload YOUR_USERNAME.pythonanywhere.com"** button
-- Wait 10-20 seconds ⏱️
-
-### 9. **Verify Deployment**
-```
-Visit: https://YOUR_USERNAME.pythonanywhere.com
-Test: https://YOUR_USERNAME.pythonanywhere.com/health
-```
-
-### 10. **Success! 🎉**
-Your app is now live!
+### 5. **Deploy & Verify**
+- Click Deploy
+- Wait for the service to build and start
+- Visit your Render URL
+- Check `https://your-app.onrender.com/health`
 
 ---
 
-## Directory Structure on PythonAnywhere
+## Project Files
 
 ```
-/home/YOUR_USERNAME/YOUR_REPO/
+./
 ├── main.py ✓
-├── wsgi.py ✓ (NEW - for PythonAnywhere)
 ├── frontend.html ✓
 ├── index.html ✓
-├── .env ✓ (with GROQ_API_KEY)
-├── requirements.txt ✓ (updated)
-├── check_deployment.py ✓ (for verification)
-├── DEPLOY_CHECKLIST.md ✓ (quick ref)
-├── PYTHONANYWHERE_DEPLOY.md ✓ (detailed guide)
+├── requirements.txt ✓
+├── render.yaml ✓
+├── check_deployment.py ✓
+├── DEPLOY_CHECKLIST.md ✓
+├── RENDER_DEPLOY.md ✓
 ├── agent/ ✓
 ├── ingestion/ ✓
 ├── static/ ✓
@@ -118,98 +78,44 @@ Your app is now live!
 ## Important Notes
 
 ### Data Persistence
-- **Current**: Data stored in `/tmp/ora_ai_data` (resets on app restart)
-- **For persistence**: Upgrade to paid tier (~$5/mo) for persistent disk storage
-- **Alternative**: Use PostgreSQL (included in paid plans)
+- Current implementation uses local temporary data storage.
+- On Render, avoid storing production data in local disk if you need persistence.
+- Use an external database or Render managed database for durable storage.
 
-### Free Tier Limits
-| Feature | Free | Paid |
-|---------|------|------|
-| Web apps | 1 | Unlimited |
-| Persistent storage | N/A | ✓ |
-| HTTPS | ✓ | ✓ |
-| Custom domain | N/A | ✓ |
-
-### Performance
-- Free tier may sleep after 15 min inactivity
-- Cold start on first request (~30 sec)
-- Adequate for demos and testing
-- Upgrade for production use
+### Render Behavior
+- Render uses `$PORT` for incoming traffic.
+- `uvicorn main:app --host 0.0.0.0 --port $PORT` is required.
+- Set `GROQ_API_KEY` in Render environment variables.
 
 ---
 
 ## Troubleshooting
 
-### Error: ModuleNotFoundError
-```bash
-# Reinstall dependencies
-pip install -r requirements.txt
-```
+### Build fails
+- Ensure `requirements.txt` installs cleanly.
+- Verify no extra `gunicorn` or `whitenoise` dependencies are required.
+- Use `pip install -r requirements.txt` locally to reproduce.
 
-### Error: 500 Internal Server Error
-1. Check **Web** tab → **Error log**
-2. Verify `.env` file exists with GROQ_API_KEY
-3. Click **Reload** button again
+### App fails to start
+- Confirm `main.py` exists at repo root.
+- Confirm Render start command uses `uvicorn main:app`.
+- Check Render service logs for startup errors.
 
-### Error: "No module named 'main'"
-1. Verify **Source code** path is correct
-2. Ensure `main.py` exists in project root
-3. Check WSGI file has correct path
-
-### Database Issues
-- Current app uses temporary storage that resets
-- This is normal for free tier
-- Upgrade to add persistent storage
-
----
-
-## Next Steps
-
-After successful deployment:
-
-1. **Test all features**
-   - Upload file
-   - Connect database
-   - Run SQL queries
-   - Test AI mode (with GROQ_API_KEY)
-
-2. **Monitor errors**
-   - **Web** tab → **Error log**
-   - Keep eye on activity
-
-3. **Plan upgrades** (optional)
-   - Persistent storage ($5/mo)
-   - Custom domain ($5/mo)
-   - PostgreSQL database (included)
-
----
-
-## Support Resources
-
-- **PythonAnywhere Help**: https://www.pythonanywhere.com/help/
-- **FastAPI Docs**: https://fastapi.tiangolo.com/
-- **Your Detailed Guide**: See `PYTHONANYWHERE_DEPLOY.md`
-- **Quick Checklist**: See `DEPLOY_CHECKLIST.md`
+### AI queries fail
+- Ensure `GROQ_API_KEY` is set in Render env vars.
+- Verify `.env` is not required in production; use Render's environment variables instead.
 
 ---
 
 ## Pre-Deployment Verification
 
-Run this before deploying:
+Run:
 ```bash
 python check_deployment.py
 ```
 
-It will check all requirements and give you a clear pass/fail.
+If all checks pass, your app is ready for Render.
 
 ---
 
-## You're Ready! 🚀
-
-Everything is configured. Follow the Quick Start (10 steps above) and your app will be live in minutes.
-
-**Questions?** Check `PYTHONANYWHERE_DEPLOY.md` for detailed troubleshooting.
-
----
-
-**Happy Deploying! 🎉**
+**You're ready to deploy on Render! 🎉**

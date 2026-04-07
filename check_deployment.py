@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-PythonAnywhere Deployment Helper
-This script helps verify and prepare your app for PythonAnywhere deployment.
+Render Deployment Helper
+This script helps verify the app is ready for deployment to Render.
 """
 
 import os
 import sys
 from pathlib import Path
 
+
 def check_requirements():
     """Check if all required packages are installed."""
     print("✓ Checking requirements.txt...")
     
     try:
-        # Try to import critical packages directly
         import fastapi
         import pandas
         import sqlalchemy
@@ -24,19 +24,19 @@ def check_requirements():
         return True
     except ImportError as e:
         print(f"  ⚠ Missing package: {e}")
-        print(f"  Run: pip install -r requirements.txt")
+        print("  Run: pip install -r requirements.txt")
         return False
+
 
 def check_files():
     """Check if essential files exist."""
     print("✓ Checking essential files...")
     required_files = [
         "main.py",
-        "wsgi.py",
         "requirements.txt",
         "frontend.html",
         "index.html",
-        ".env"
+        "render.yaml"
     ]
     
     all_exist = True
@@ -49,9 +49,15 @@ def check_files():
     
     return all_exist
 
+
 def check_env():
-    """Check if .env file has required variables."""
-    print("✓ Checking .env file...")
+    """Check if .env file has required variables if present."""
+    print("✓ Checking environment variables...")
+    env_path = Path(".env")
+    if not env_path.exists():
+        print("  ⚠ .env not found. Make sure GROQ_API_KEY is set in Render environment variables.")
+        return True
+    
     try:
         from dotenv import load_dotenv
         load_dotenv()
@@ -72,6 +78,7 @@ def check_env():
         print(f"  ✗ Error checking .env: {e}")
         return False
 
+
 def check_main_py():
     """Check if main.py has required imports and setup."""
     print("✓ Checking main.py...")
@@ -83,7 +90,7 @@ def check_main_py():
             ("FastAPI import", "from fastapi import FastAPI"),
             ("Lifespan handler", "@asynccontextmanager"),
             ("CORS middleware", "CORSMiddleware"),
-            ("Static files", "response_class=HTMLResponse"),
+            ("Health endpoint", "@app.get(\"/health\")"),
         ]
         
         all_good = True
@@ -99,98 +106,73 @@ def check_main_py():
         print(f"  ✗ Error checking main.py: {e}")
         return False
 
-def check_wsgi():
-    """Check if wsgi.py exists and is correct."""
-    print("✓ Checking wsgi.py...")
-    if not Path("wsgi.py").exists():
-        print("  ✗ wsgi.py not found")
+
+def check_render_yaml():
+    """Check if render.yaml exists and contains a valid start command."""
+    print("✓ Checking render.yaml...")
+    if not Path("render.yaml").exists():
+        print("  ✗ render.yaml not found")
         return False
     
     try:
-        with open("wsgi.py") as f:
+        with open("render.yaml") as f:
             content = f.read()
         
-        required = [
-            "from main import app",
-            "application = app"
-        ]
-        
-        all_good = True
-        for check_str in required:
-            if check_str in content:
-                print(f"  ✓ Contains: {check_str}")
-            else:
-                print(f"  ✗ Missing: {check_str}")
-                all_good = False
-        
-        return all_good
-    except Exception as e:
-        print(f"  ✗ Error checking wsgi.py: {e}")
+        if "uvicorn main:app --host 0.0.0.0 --port $PORT" in content:
+            print("  ✓ startCommand uses uvicorn main:app")
+            return True
+        print("  ⚠ render.yaml found but start command is not the expected uvicorn command")
         return False
+    except Exception as e:
+        print(f"  ✗ Error checking render.yaml: {e}")
+        return False
+
 
 def print_deployment_guide():
     """Print quick deployment guide."""
     print("\n" + "="*60)
-    print("📋 PYTHONANYWHERE DEPLOYMENT GUIDE")
+    print("📋 Render Deployment Guide")
     print("="*60)
     print("""
-1. CREATE ACCOUNT
-   - Sign up at https://www.pythonanywhere.com (FREE)
-   - Verify your email
+1. PUSH YOUR REPO
+   - Push your code to GitHub, GitLab, or Bitbucket.
 
-2. CLONE REPOSITORY
-   - Open Bash console
-   - cd /home/YOUR_USERNAME
-   - git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-   - cd YOUR_REPO
+2. CREATE A RENDER WEB SERVICE
+   - Visit https://render.com
+   - Create a new Web Service
+   - Connect your repo and select the branch
+   - Choose Python environment
 
-3. CREATE VIRTUALENV
-   - mkvirtualenv --python=/usr/bin/python3.10 oraai
-   - pip install -r requirements.txt
+3. SET BUILD & START COMMANDS
+   - Build command: pip install -r requirements.txt
+   - Start command: uvicorn main:app --host 0.0.0.0 --port $PORT
 
-4. ADD WEB APP
-   - Click "Web" → "Add new web app"
-   - Choose "Manual configuration"
-   - Select "Python 3.10"
+4. ADD ENVIRONMENT VARIABLES
+   - GROQ_API_KEY=your_real_key_here
+   - Optional: ALLOWED_ORIGINS=https://your-app.onrender.com
 
-5. UPDATE WSGI FILE
-   - Click WSGI configuration file link
-   - Replace content with wsgi.py from your project
-   - Replace YOUR_USERNAME with actual username
+5. DEPLOY
+   - Click Deploy
+   - Wait for the service to build and start
 
-6. SET VIRTUALENV & SOURCE CODE
-   - Virtualenv: /home/YOUR_USERNAME/.virtualenvs/oraai
-   - Source code: /home/YOUR_USERNAME/YOUR_REPO
-
-7. ADD ENVIRONMENT VARIABLES
-   - nano /home/YOUR_USERNAME/YOUR_REPO/.env
-   - Add: GROQ_API_KEY=your_real_key
-   - Add: ALLOWED_ORIGINS=https://YOUR_USERNAME.pythonanywhere.com
-   - Save: Ctrl+X → Y → Enter
-
-8. RELOAD APP
-   - Click green "Reload" button in Web tab
-   - Wait 10-20 seconds
-
-9. TEST
-   - Visit: https://YOUR_USERNAME.pythonanywhere.com
-   - Check: https://YOUR_USERNAME.pythonanywhere.com/health
-
-✓ DONE! Your app is live!
+6. VERIFY
+   - Visit your Render service URL
+   - Check: <your-service-url>/health
 """)
+
 
 def main():
     """Run all checks."""
     print("\n" + "="*60)
-    print("🚀 ORA AI - PythonAnywhere Pre-Deployment Check")
+    print("🚀 ORA AI - Render Deployment Preflight")
     print("="*60 + "\n")
     
     results = {
         "Requirements": check_requirements(),
         "Files": check_files(),
-        "Environment (.env)": check_env(),
+        "Environment (.env or Render vars)": check_env(),
         "main.py": check_main_py(),
-        "wsgi.py": check_wsgi(),
+        "render.yaml": check_render_yaml(),
     }
     
     print("\n" + "="*60)
@@ -204,13 +186,14 @@ def main():
     all_pass = all(results.values())
     
     if all_pass:
-        print(f"\n✓ All checks passed! Ready for deployment.\n")
+        print(f"\n✓ All checks passed! Ready for Render deployment.\n")
     else:
         print(f"\n⚠ Some checks failed. Fix issues above if needed.\n")
     
     print_deployment_guide()
     
     return 0 if all_pass else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,112 +1,74 @@
-# 🚀 PythonAnywhere Quick Deploy Checklist
+# 🚀 Render Quick Deploy Checklist
 
 ## Pre-Deployment: Local Testing
 - [ ] App runs locally: `uvicorn main:app --reload`
 - [ ] Health check works: `curl http://localhost:8000/health`
 - [ ] Upload test file works
-- [ ] All dependencies in requirements.txt
+- [ ] All dependencies in `requirements.txt`
 
 ---
 
-## PythonAnywhere Setup (5 minutes)
+## Render Setup (5 minutes)
 
-### 1. Account & Repository
-- [ ] Create free account at https://www.pythonanywhere.com
-- [ ] Verify email
-- [ ] Go to **Bash console**
-- [ ] Clone your repository: 
-```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
-```
+### 1. Push Your Repo
+- [ ] Push your project to GitHub, GitLab, or Bitbucket
 
-### 2. Virtual Environment
-- [ ] Create virtualenv:
-```bash
-mkvirtualenv --python=/usr/bin/python3.10 oraai
-```
-- [ ] Install dependencies:
+### 2. Create a Render Web Service
+- [ ] Go to https://render.com
+- [ ] Create a new Web Service
+- [ ] Connect your repo and select the branch
+- [ ] Choose **Python** environment
+
+### 3. Set Build & Start Commands
+- [ ] Build command:
 ```bash
 pip install -r requirements.txt
 ```
-
-### 3. Web App Configuration
-- [ ] Go to **Web** tab
-- [ ] Click **"Add a new web app"**
-- [ ] Select **"Manual configuration"**
-- [ ] Choose **"Python 3.10"**
-- [ ] Click through to finish
-
-### 4. WSGI Configuration
-- [ ] In **Web** tab, click **WSGI configuration file** link
-- [ ] Copy entire content from [wsgi.py](wsgi.py)
-- [ ] Paste into PythonAnywhere editor
-- [ ] **Replace** `YOUR_USERNAME` with your actual username
-- [ ] Save (Ctrl+S)
-
-### 5. Virtualenv Setup
-- [ ] In **Web** tab, set **Virtualenv** field:
-```
-/home/YOUR_USERNAME/.virtualenvs/oraai
-```
-- [ ] Set **Source code** field:
-```
-/home/YOUR_USERNAME/YOUR_REPO
-```
-
-### 6. Environment Variables
-- [ ] In **Bash console**, edit `.env`:
+- [ ] Start command:
 ```bash
-nano /home/YOUR_USERNAME/YOUR_REPO/.env
+uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
-- [ ] Add/update:
-```
-GROQ_API_KEY=your_real_key_here
-ALLOWED_ORIGINS=https://YOUR_USERNAME.pythonanywhere.com
-```
-- [ ] Save: `Ctrl+X` → `Y` → `Enter`
 
-### 7. Reload App
-- [ ] Go back to **Web** tab
-- [ ] Click green **"Reload YOUR_USERNAME.pythonanywhere.com"** button
-- [ ] Wait 10-20 seconds
+### 4. Add Environment Variables
+- [ ] Add `GROQ_API_KEY=your_real_key_here`
+- [ ] Optional: `ALLOWED_ORIGINS=https://your-app.onrender.com`
+
+### 5. Deploy
+- [ ] Click **Deploy**
+- [ ] Wait for the service to build and start
 
 ---
 
 ## Post-Deployment: Verification
 
 ### Test Your App
-- [ ] Visit: `https://YOUR_USERNAME.pythonanywhere.com`
-- [ ] Test health: `https://YOUR_USERNAME.pythonanywhere.com/health`
-- [ ] Test upload: Use Web UI to upload a file
-- [ ] Check error log if issues: **Web** → **Error log**
+- [ ] Visit your Render URL
+- [ ] Test health endpoint: `https://your-app.onrender.com/health`
+- [ ] Upload a file and verify preview works
+- [ ] Run AI SQL queries with `GROQ_API_KEY` set
 
 ### Troubleshooting
-- [ ] See 500 error? Check **Error log**
-- [ ] Module not found? Reinstall: `pip install -r requirements.txt`
-- [ ] Still issues? Check WSGI file configuration
-- [ ] Click reload button again
+- [ ] Check Render build logs for errors
+- [ ] Verify `requirements.txt` installed successfully
+- [ ] Confirm `main.py` exists in project root
+- [ ] Confirm Start Command uses `uvicorn main:app`
 
 ---
 
 ## Done! 🎉
 
-Your app is now online at:
-```
-https://YOUR_USERNAME.pythonanywhere.com
-```
+Your app is now online on Render.
 
 ---
 
-## Optional Upgrades
+## Optional Improvements
 
-| Feature | Cost | Benefit |
-|---------|------|---------|
-| Persistent storage | $5/mo | Data survives restarts |
-| Custom domain | $5/mo | Use your own domain |
-| PostgreSQL | Included | Better than SQLite |
-| Scheduled tasks | $5/mo | Auto backups, etc |
+| Feature | Benefit |
+|---------|---------|
+| Custom domain | Makes app easier to share |
+| TLS | Secure HTTPS traffic |
+| External DB | Better persistence than local disk |
 
 ---
 
-**Need help?** See [PYTHONANYWHERE_DEPLOY.md](PYTHONANYWHERE_DEPLOY.md) for detailed troubleshooting.
+**Need help?** See `RENDER_DEPLOY.md` for detailed troubleshooting.
