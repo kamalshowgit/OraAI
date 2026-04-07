@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORA AI Data Workspace</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap");
+
+:root {
+    --bg: #ffffff;
+    --bg-gradient-1: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    --bg-gradient-2: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+    --panel: rgba(255, 255, 255, 0.95);
+    --panel-2: rgba(255, 255, 255, 0.85);
+    --panel-glass: rgba(255, 255, 255, 0.75);
+    --text: #1565c0;
+    --muted: #546e7a;
+    --line: rgba(21, 101, 192, 0.2);
+    --primary: #1976d2;
+    --primary-hover: #1565c0;
+    --primary-soft: rgba(25, 118, 210, 0.1);
+    --secondary: #42a5f5;
+    --secondary-hover: #1e88e5;
+    --secondary-soft: rgba(66, 165, 245, 0.1);
+    --info: #1976d2;
+    --info-soft: rgba(25, 118, 210, 0.1);
+    --success: #4caf50;
+    --success-soft: rgba(76, 175, 80, 0.1);
+    --danger: #f44336;
+    --danger-soft: rgba(244, 67, 54, 0.1);
+    --rail-top: rgba(255, 255, 255, 0.9);
+    --rail-bottom: rgba(255, 255, 255, 0.95);
+    --rail-text: #1565c0;
+    --shadow: 0 4px 20px rgba(21, 101, 192, 0.15);
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(21, 101, 192, 0.3);
+    --apple-gradient: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    --chart-1: #1976d2;
+    --chart-2: #4caf50;
+    --chart-3: #ff9800;
+    --chart-4: #f44336;
+    --chart-5: #9c27b0;
+    --chart-6: #00bcd4;
+    --chart-7: #8bc34a;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Manrope", "Avenir Next", "Trebuchet MS", sans-serif;
+    background: var(--apple-gradient);
+    color: var(--text);
+}
+
+.app-shell {
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    min-height: 100vh;
+}
+
+.rail {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid var(--glass-border);
+    color: var(--rail-text);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.brand {
+    margin-bottom: 8px;
+    padding: 20px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.brand::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--apple-gradient);
+    opacity: 0.1;
+    z-index: -1;
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 24px;
+    font-family: "Sora", "Avenir Next", sans-serif;
+    letter-spacing: 0.4px;
+    background: var(--apple-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.brand p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    opacity: 0.82;
+}
+
+.nav-btn {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: inherit;
+    border-radius: 12px;
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.nav-btn.active {
+    background: var(--apple-gradient);
+    color: white;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-btn.active {
+    background: rgba(15, 142, 123, 0.3);
+    border-color: rgba(184, 242, 231, 0.55);
+}
+
+.rail-footer {
+    margin-top: auto;
+    font-size: 12px;
+    opacity: 0.8;
+    line-height: 1.5;
+    padding: 10px;
+    border-top: 1px solid rgba(186, 217, 249, 0.2);
+}
+
+.workspace {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.topbar {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.topbar h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    font-family: "Sora", "Avenir Next", sans-serif;
+}
+
+.kpi-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.kpi {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    min-width: 130px;
+    padding: 10px 16px;
+    box-shadow: var(--shadow);
+}
+
+.kpi .label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.35px;
+}
+
+.kpi .value {
+    display: block;
+    margin-top: 2px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--secondary);
+}
+
+.content {
+    padding: 24px;
+    display: grid;
+    gap: 20px;
+}
+
+.view {
+    display: none;
+    gap: 20px;
+}
+
+.view.active {
+    display: grid;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    animation: card-enter 260ms ease both;
+}
+
+.card h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.card h4 {
+    margin: 14px 0 8px;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.35px;
+}
+
+.row {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+label {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+input,
+select,
+textarea,
+button {
+    font: inherit;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    margin-top: 5px;
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 10px 12px;
+    color: var(--text);
+    box-shadow: var(--shadow);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid transparent;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.btn {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+}
+
+.btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn.primary {
+    background: var(--apple-gradient);
+    border-color: transparent;
+    color: #fff;
+}
+
+.btn.primary:hover {
+    background: linear-gradient(135deg, #5a4fcf 0%, #764ba2 100%);
+}
+
+.btn.success {
+    background: linear-gradient(135deg, #34c759 0%, #32d74b 100%);
+    border-color: transparent;
+    color: #fff;
+}
+
+.btn.success:hover {
+    background: linear-gradient(135deg, #28a745 0%, #28a745 100%);
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.status {
+    margin-top: 10px;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: var(--shadow);
+}
+
+.status.info {
+    color: var(--info);
+}
+
+.status.success {
+    color: var(--success);
+}
+
+.status.error {
+    color: var(--danger);
+}
+
+.table-wrap {
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: auto;
+    max-height: 420px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+    background: #fff;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.table th,
+.table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    white-space: nowrap;
+    text-align: left;
+}
+
+.table th {
+    position: sticky;
+    top: 0;
+    background: var(--secondary-soft);
+    z-index: 1;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.sql-block {
+    margin: 8px 0 0;
+    background: #08263a;
+    color: #d8ecfb;
+    border-radius: 10px;
+    padding: 10px;
+    min-height: 72px;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+}
+
+.schema-grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.schema-pill {
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 10px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.schema-pill strong {
+    display: block;
+    font-size: 13px;
+}
+
+.schema-pill span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.chart-area {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    padding: 10px;
+}
+
+#resultChart {
+    width: 100%;
+    height: 280px;
+    display: block;
+}
+
+.helper {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.history-item {
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+@keyframes card-enter {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.history-item h4 {
+    margin: 0 0 6px;
+    font-size: 14px;
+}
+
+.history-meta {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+select:disabled,
+textarea:disabled,
+input:disabled,
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+@media (max-width: 1024px) {
+    .app-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .rail {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        border-right: none;
+        border-bottom: 1px solid rgba(178, 210, 240, 0.25);
+    }
+
+    .brand {
+        width: 100%;
+        margin: 0 0 4px;
+    }
+
+    .rail-footer {
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .grid-2,
+    .row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+    <aside class="rail">
+        <div class="brand">
+            <h1>ORA AI</h1>
+            <p>Production analytics workspace</p>
+        </div>
+        <button class="nav-btn active" data-target="data-source">Data Source</button>
+        <button class="nav-btn" data-target="explorer">Explorer</button>
+        <button class="nav-btn" data-target="ai-studio">AI Studio</button>
+        <button class="nav-btn" data-target="history">History</button>
+        <div class="rail-footer">
+            Connect data, run AI SQL, inspect tables,
+            and ship production-ready insights.
+        </div>
+    </aside>
+
+    <main class="workspace">
+        <header class="topbar">
+            <h2 id="viewTitle">ORA AI Data Source</h2>
+            <div class="kpi-row">
+                <div class="kpi">
+                    <span class="label">Connected DB</span>
+                    <span class="value" id="kpiDb">No</span>
+                </div>
+                <div class="kpi">
+                    <span class="label">Active Table</span>
+                    <span class="value" id="kpiTable">-</span>
+                </div>
+                <div class="kpi">
+                    <span class="label">Table Count</span>
+                    <span class="value" id="kpiCount">0</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="content">
+            <div class="view active" id="view-data-source">
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Upload Dataset</h3>
+                        <label>
+                            File (.csv, .xlsx, .txt)
+                            <input type="file" id="uploadFile" accept=".csv,.xlsx,.txt">
+                        </label>
+                        <div class="row">
+                            <label>
+                                Delimiter (TXT)
+                                <select id="uploadDelimiter">
+                                    <option value="">Auto / None</option>
+                                    <option value="comma">Comma (,)</option>
+                                    <option value="tab">Tab</option>
+                                    <option value="pipe">Pipe (|)</option>
+                                    <option value="semicolon">Semicolon (;)</option>
+                                </select>
+                            </label>
+                            <label>
+                                Target Table
+                                <input type="text" id="uploadTable" placeholder="dataset">
+                            </label>
+                        </div>
+                        <div class="actions">
+                            <button class="btn primary" id="uploadBtn">Upload & Store</button>
+                        </div>
+                        <div id="uploadStatus" class="status info">Ready to upload a dataset.</div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Connect Existing SQLite</h3>
+                        <label>
+                            SQLite File (.db, .sqlite, .sqlite3)
+                            <input type="file" id="dbFile" accept=".db,.sqlite,.sqlite3">
+                        </label>
+                        <label>
+                            Preferred Active Table (optional)
+                            <input type="text" id="dbActiveTable" placeholder="dataset">
+                        </label>
+                        <div class="actions">
+                            <button class="btn success" id="connectDbBtn">Connect Database</button>
+                            <button class="btn" id="refreshTablesBtn">Refresh Tables</button>
+                        </div>
+                        <div id="dbStatus" class="status info">You can either upload data or connect an existing DB.</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Schema Snapshot</h3>
+                    <div id="schemaGrid" class="schema-grid"></div>
+                    <div id="schemaHint" class="helper">No schema loaded yet.</div>
+                </div>
+            </div>
+
+            <div class="view" id="view-explorer">
+                <div class="card">
+                    <h3>Table Explorer</h3>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label>
+                                Table
+                                <div class="d-flex">
+                                    <select id="explorerTable" class="form-select flex-grow-1"></select>
+                                    <button class="btn btn-sm btn-outline-info ms-2" onclick="showTableModal(document.getElementById('explorerTable').value)" title="View table details">ℹ️</button>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="col-md-4">
+                            <label>
+                                Row Limit
+                                <input type="number" id="tableLimit" min="1" max="5000" value="200">
+                        </label>
+                    </div>
+                    <div class="actions">
+                        <button class="btn primary" id="loadTableBtn">Load Table</button>
+                        <button class="btn" id="downloadBtn">Download CSV</button>
+                    </div>
+                    <div id="tableStatus" class="status info">Choose a table and load preview.</div>
+                    <div class="table-wrap" style="margin-top: 10px;">
+                        <table class="table">
+                            <thead><tr id="previewHead"></tr></thead>
+                            <tbody id="previewBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-ai-studio">
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Ask Data (AI)</h3>
+                        <div class="d-flex align-items-center mb-3">
+                            <label class="flex-grow-1">
+                                Preferred Table (optional context)
+                                <select id="queryTable" class="form-select"></select>
+                            </label>
+                            <button class="btn btn-sm btn-outline-info ms-2" onclick="showTableModal(document.getElementById('queryTable').value)" title="View table details">ℹ️</button>
+                        </div>
+                        <label>
+                            Ask any question about your data
+                            <textarea id="queryText" placeholder="Examples: Which region has highest revenue? Show monthly trend. Find top 10 customers by spend."></textarea>
+                        </label>
+                        <label>
+                            Answer View
+                            <select id="answerMode">
+                                <option value="table">Table</option>
+                                <option value="graph">Graph</option>
+                                <option value="auto">Auto</option>
+                            </select>
+                        </label>
+                        <div class="actions">
+                            <button class="btn primary" id="runQueryBtn">Ask AI</button>
+                        </div>
+                        <h4>Generated SQL</h4>
+                        <pre id="generatedSql" class="sql-block"></pre>
+                        <div id="queryStatus" class="status info">Ask a question and AI will generate SQL + result.</div>
+                    </div>
+
+                    <div class="card">
+                        <h3>SQL Workbench</h3>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label>
+                                    Active Table (optional for refresh focus)
+                                    <div class="d-flex">
+                                        <select id="sqlTable" class="form-select flex-grow-1"></select>
+                                        <button class="btn btn-sm btn-outline-info ms-2" onclick="showTableModal(document.getElementById('sqlTable').value)" title="View table details">ℹ️</button>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label>
+                                    Input Type
+                                    <select id="sqlInputType">
+                                        <option value="sql">SQL</option>
+                                        <option value="english">English</option>
+                                        <option value="auto">Auto Detect</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                        <label>
+                            SQL or English instruction
+                            <textarea id="rawSql" placeholder="Example SQL: CREATE TABLE top_customers AS SELECT customer_id, SUM(amount) AS total_amount FROM dataset GROUP BY customer_id; | Example English: Create a top customers table with total sales."></textarea>
+                        </label>
+                        <div class="actions">
+                            <button class="btn success" id="runSqlBtn">Run SQL</button>
+                        </div>
+                        <div id="sqlStatus" class="status info">Run SQL to create new tables, transform data, or fetch results.</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Graph Builder</h3>
+                    <div class="row">
+                        <label>
+                            Chart Type
+                            <select id="chartType">
+                                <option value="bar">Bar</option>
+                                <option value="line">Line</option>
+                                <option value="pie">Pie</option>
+                            </select>
+                        </label>
+                        <label>
+                            X Axis / Category
+                            <select id="chartX"></select>
+                        </label>
+                    </div>
+                    <label>
+                        Y Axis (numeric)
+                        <select id="chartY"></select>
+                    </label>
+                    <div class="actions">
+                        <button class="btn" id="renderChartBtn">Render Chart</button>
+                    </div>
+                    <div class="chart-area">
+                        <canvas id="resultChart"></canvas>
+                    </div>
+                    <div id="chartHint" class="helper">Charts are generated from the latest AI/SQL result set.</div>
+                </div>
+
+                <div class="card">
+                    <h3>Result Table</h3>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr id="queryHead"></tr></thead>
+                            <tbody id="queryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="view-history">
+                <div class="card">
+                    <h3>Question History (Max 10)</h3>
+                    <div class="helper">Double-click a history item to reopen its table/graph output.</div>
+                    <div class="actions">
+                        <button class="btn" id="clearHistoryBtn">Clear History</button>
+                    </div>
+                    <div id="historyEmpty" class="status info">No question history yet.</div>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+const state = {
+    tables: [],
+    activeTable: null,
+    schema: [],
+    preview: { columns: [], rows: [] },
+    queryResult: { columns: [], rows: [] },
+    hasDatabase: false,
+    history: []
+};
+
+const MAX_HISTORY = 10;
+
+const viewTitles = {
+    "data-source": "ORA AI Data Source",
+    "explorer": "ORA AI Explorer",
+    "ai-studio": "ORA AI Studio",
+    "history": "ORA AI History"
+};
+
+function getCssVar(name, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+}
+
+const CHART_COLORS = [
+    getCssVar("--chart-1", "#1b6fc9"),
+    getCssVar("--chart-2", "#0f8e7b"),
+    getCssVar("--chart-3", "#ff9f43"),
+    getCssVar("--chart-4", "#1388d8"),
+    getCssVar("--chart-5", "#e66363"),
+    getCssVar("--chart-6", "#0b5c8a"),
+    getCssVar("--chart-7", "#4cbf9f"),
+];
+
+.btn-outline-info {
+    border-color: var(--info);
+    color: var(--info);
+}
+
+.btn-outline-info:hover {
+    background-color: var(--info);
+    border-color: var(--info);
+    color: white;
+}
+
+function setStatus(id, message, type = "info") {
+    // Try to use modal, fall back to alert if bootstrap not available
+    try {
+        const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+        const modalMessage = document.getElementById('modalStatusMessage');
+        modalMessage.className = `status ${type}`;
+        modalMessage.textContent = message;
+        modal.show();
+    } catch (e) {
+        alert(`${type.toUpperCase()}: ${message}`);
+    }
+}
+
+// Table interaction modal functions
+let currentModalTable = null;
+
+async function showTableModal(tableName) {
+    if (!tableName || tableName === "") {
+        setStatus("tableStatus", "Please select a table first.", "info");
+        return;
+    }
+
+    currentModalTable = tableName;
+    const modal = new bootstrap.Modal(document.getElementById('tableModal'));
+    const tableNameEl = document.getElementById('tableName');
+    const tableSchemaEl = document.getElementById('tableSchema');
+    const tableStatsEl = document.getElementById('tableStats');
+
+    tableNameEl.textContent = `Table: ${tableName}`;
+    tableSchemaEl.innerHTML = '<p>Loading table information...</p>';
+    tableStatsEl.innerHTML = '';
+
+    try {
+        // Get table schema
+        const schemaPayload = await apiRequest(`/schema?table_name=${encodeURIComponent(tableName)}`);
+        const schema = schemaPayload.schema || [];
+
+        // Render schema
+        let schemaHtml = '<h6>Schema:</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Column</th><th>Type</th><th>Nullable</th></tr></thead><tbody>';
+        schema.forEach(col => {
+            schemaHtml += `<tr><td>${col.name}</td><td>${col.type}</td><td>${col.nullable ? 'Yes' : 'No'}</td></tr>`;
+        });
+        schemaHtml += '</tbody></table></div>';
+        tableSchemaEl.innerHTML = schemaHtml;
+
+        // Get table stats (row count) - get a small sample
+        const tablePayload = await apiRequest(`/table?table_name=${encodeURIComponent(tableName)}&limit=1`);
+        const rowCount = tablePayload.rows ? tablePayload.rows.length : 0;
+        tableStatsEl.innerHTML = `<h6>Statistics:</h6><p>Columns: ${schema.length}, Sample Rows: ${rowCount}</p>`;
+
+    } catch (error) {
+        console.error("Error loading table info:", error);
+        tableSchemaEl.innerHTML = '<p class="text-danger">Error loading table information. Please try again.</p>';
+        tableStatsEl.innerHTML = '';
+    }
+
+    modal.show();
+}
+
+function quickPreview() {
+    if (!currentModalTable) return;
+    document.getElementById('explorerTable').value = currentModalTable;
+    activateView('explorer');
+    loadTablePreview();
+    bootstrap.Modal.getInstance(document.getElementById('tableModal')).hide();
+}
+
+function quickQuery() {
+    if (!currentModalTable) return;
+    document.getElementById('queryTable').value = currentModalTable;
+    document.getElementById('queryText').focus();
+    activateView('ai-studio');
+    bootstrap.Modal.getInstance(document.getElementById('tableModal')).hide();
+}
+
+function quickSQL() {
+    if (!currentModalTable) return;
+    document.getElementById('sqlTable').value = currentModalTable;
+    document.getElementById('rawSql').focus();
+    activateView('ai-studio');
+    bootstrap.Modal.getInstance(document.getElementById('tableModal')).hide();
+}
+
+function downloadTable() {
+    if (!currentModalTable) return;
+    // This will use the existing download functionality
+    downloadCurrentTable();
+    bootstrap.Modal.getInstance(document.getElementById('tableModal')).hide();
+}
+
+function setAsActiveTable() {
+    if (!currentModalTable) return;
+    state.activeTable = currentModalTable;
+    syncTableSelectors();
+    setStatus("tableStatus", `Set '${currentModalTable}' as active table.`, "success");
+    bootstrap.Modal.getInstance(document.getElementById('tableModal')).hide();
+}
+
+async function apiRequest(url, options = {}) {
+    const response = await fetch(url, options);
+    const contentType = response.headers.get("content-type") || "";
+    const payload = contentType.includes("application/json") ? await response.json() : null;
+
+    if (!response.ok) {
+        const errorText = payload?.detail || "Request failed";
+        throw new Error(errorText);
+    }
+
+    return payload;
+}
+
+function setKpis() {
+    document.getElementById("kpiDb").textContent = state.hasDatabase ? "Yes" : "No";
+    document.getElementById("kpiTable").textContent = state.activeTable || "-";
+    document.getElementById("kpiCount").textContent = String(state.tables.length || 0);
+}
+
+function setSelectOptions(selectId, options, selected) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = "";
+
+    if (!options.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No tables available";
+        option.selected = true;
+        select.appendChild(option);
+        select.disabled = true;
+        return;
+    }
+
+    select.disabled = false;
+    options.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        if (selected && selected === value) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
+function syncTableSelectors() {
+    const tableOptions = state.tables;
+    const active = state.activeTable || tableOptions[0] || "";
+
+    setSelectOptions("explorerTable", tableOptions, active);
+    setSelectOptions("queryTable", tableOptions, active);
+    setSelectOptions("sqlTable", tableOptions, active);
+
+    if (state.activeTable) {
+        document.getElementById("uploadTable").value = state.activeTable;
+        document.getElementById("dbActiveTable").value = state.activeTable;
+    }
+
+    setKpis();
+}
+
+function setDatabaseDependentState(enabled) {
+    [
+        "explorerTable",
+        "tableLimit",
+        "loadTableBtn",
+        "downloadBtn",
+        "queryTable",
+        "queryText",
+        "answerMode",
+        "runQueryBtn",
+        "sqlTable",
+        "sqlInputType",
+        "rawSql",
+        "runSqlBtn",
+        "chartType",
+        "chartX",
+        "chartY",
+        "renderChartBtn"
+    ].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.disabled = !enabled;
+        }
+    });
+}
+
+function resetDataPanels() {
+    state.tables = [];
+    state.activeTable = null;
+    state.schema = [];
+    state.preview = { columns: [], rows: [] };
+    state.queryResult = { columns: [], rows: [] };
+    state.hasDatabase = false;
+
+    renderSchema([]);
+    renderTable("previewHead", "previewBody", [], []);
+    renderTable("queryHead", "queryBody", [], []);
+    document.getElementById("generatedSql").textContent = "";
+    document.getElementById("queryText").value = "";
+    document.getElementById("rawSql").value = "";
+    document.getElementById("chartHint").textContent = "Connect a database or upload a file to enable charting.";
+    setStatus("tableStatus", "No table connected yet.", "info");
+    setStatus("queryStatus", "Connect a database or upload data to start asking questions.", "info");
+    setStatus("sqlStatus", "Connect a database or upload data to run SQL.", "info");
+    syncTableSelectors();
+    setDatabaseDependentState(false);
+}
+
+function snapshotResult(columns, rows, maxRows = 200) {
+    return {
+        columns: [...(columns || [])],
+        rows: (rows || []).slice(0, maxRows).map((row) => [...row]),
+    };
+}
+
+function getCurrentChartConfig() {
+    return {
+        chartType: document.getElementById("chartType").value,
+        x: document.getElementById("chartX").value,
+        y: document.getElementById("chartY").value,
+    };
+}
+
+function applyChartConfig(config) {
+    if (!config) {
+        return;
+    }
+
+    const chartType = document.getElementById("chartType");
+    const chartX = document.getElementById("chartX");
+    const chartY = document.getElementById("chartY");
+
+    if (config.chartType) {
+        chartType.value = config.chartType;
+    }
+    if (config.x && Array.from(chartX.options).some((option) => option.value === config.x)) {
+        chartX.value = config.x;
+    }
+    if (config.y && Array.from(chartY.options).some((option) => option.value === config.y)) {
+        chartY.value = config.y;
+    }
+}
+
+function renderHistory() {
+    const container = document.getElementById("historyList");
+    const emptyState = document.getElementById("historyEmpty");
+    container.innerHTML = "";
+
+    if (!state.history.length) {
+        emptyState.style.display = "block";
+        return;
+    }
+
+    emptyState.style.display = "none";
+    state.history.forEach((item, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "history-item";
+
+        const answerSummary = item.error
+            ? `Error: ${item.answer}`
+            : `${item.answer} (${item.rows} rows, ${item.columns} columns)`;
+
+        wrapper.innerHTML = `
+            <h4>Q${state.history.length - index}: ${item.question}</h4>
+            <div class="history-meta">${item.time} | View: ${item.mode}</div>
+            <div class="history-meta">Answer: ${answerSummary}</div>
+            <pre class="sql-block">${item.sql || ""}</pre>
+        `;
+        wrapper.title = "Double-click to reopen this result";
+        wrapper.addEventListener("dblclick", () => openHistoryItem(index));
+        container.appendChild(wrapper);
+    });
+}
+
+function addHistoryEntry(entry) {
+    const time = new Date().toLocaleString();
+    state.history.unshift({ ...entry, time });
+    if (state.history.length > MAX_HISTORY) {
+        state.history = state.history.slice(0, MAX_HISTORY);
+    }
+    renderHistory();
+}
+
+function openHistoryItem(index) {
+    const item = state.history[index];
+    if (!item || !item.result) {
+        return;
+    }
+
+    state.queryResult = snapshotResult(item.result.columns, item.result.rows, 5000);
+    renderTable("queryHead", "queryBody", state.queryResult.columns, state.queryResult.rows);
+    setupChartSelectors(state.queryResult.columns, state.queryResult.rows);
+    applyChartConfig(item.chartConfig);
+
+    document.getElementById("generatedSql").textContent = item.sql || "";
+    document.getElementById("answerMode").value = item.mode || "table";
+
+    if (item.source === "ai") {
+        document.getElementById("queryText").value = item.question;
+    } else {
+        document.getElementById("rawSql").value = item.question;
+    }
+
+    if ((item.mode === "graph" || item.mode === "auto") && state.queryResult.rows.length) {
+        renderChart();
+    } else {
+        const canvas = document.getElementById("resultChart");
+        const ctx = canvas.getContext("2d");
+        clearCanvas(canvas, ctx);
+        document.getElementById("chartHint").textContent = "Table mode restored from history.";
+    }
+
+    setStatus("queryStatus", "Loaded result from history.", "success");
+    activateView("ai-studio");
+}
+
+function updateSqlInputTypeUI() {
+    const inputType = document.getElementById("sqlInputType").value;
+    const rawSql = document.getElementById("rawSql");
+    const runSqlBtn = document.getElementById("runSqlBtn");
+
+    if (inputType === "english") {
+        rawSql.placeholder = "Example: Create a summary table by region with total revenue and average margin.";
+        runSqlBtn.textContent = "Run English";
+    } else if (inputType === "auto") {
+        rawSql.placeholder = "Enter SQL or English. Auto mode will detect and run appropriately.";
+        runSqlBtn.textContent = "Run Auto";
+    } else {
+        rawSql.placeholder = "Example SQL: CREATE TABLE top_customers AS SELECT customer_id, SUM(amount) AS total_amount FROM dataset GROUP BY customer_id;";
+        runSqlBtn.textContent = "Run SQL";
+    }
+}
+
+function renderSchema(schema) {
+    const container = document.getElementById("schemaGrid");
+    const hint = document.getElementById("schemaHint");
+    container.innerHTML = "";
+
+    if (!schema || !schema.length) {
+        hint.textContent = "No schema loaded yet.";
+        return;
+    }
+
+    hint.textContent = `Loaded ${schema.length} columns from ${state.activeTable}.`;
+
+    schema.forEach((column) => {
+        const block = document.createElement("div");
+        block.className = "schema-pill";
+        block.innerHTML = `<strong>${column.name}</strong><span>${column.type}</span>`;
+        container.appendChild(block);
+    });
+}
+
+function renderTable(headId, bodyId, columns, rows) {
+    const head = document.getElementById(headId);
+    const body = document.getElementById(bodyId);
+    head.innerHTML = "";
+    body.innerHTML = "";
+
+    if (!columns || !columns.length) {
+        return;
+    }
+
+    columns.forEach((name) => {
+        const th = document.createElement("th");
+        th.textContent = name;
+        head.appendChild(th);
+    });
+
+    rows.forEach((row) => {
+        const tr = document.createElement("tr");
+        row.forEach((value) => {
+            const td = document.createElement("td");
+            td.textContent = value === null || value === undefined ? "" : String(value);
+            tr.appendChild(td);
+        });
+        body.appendChild(tr);
+    });
+}
+
+function toNumber(value) {
+    if (value === null || value === undefined || value === "") {
+        return NaN;
+    }
+    const normalized = String(value).replace(/,/g, "").trim();
+    const num = Number(normalized);
+    return Number.isFinite(num) ? num : NaN;
+}
+
+function firstNumericColumn(columns, rows) {
+    for (let i = 0; i < columns.length; i += 1) {
+        const hasNumeric = rows.some((row) => Number.isFinite(toNumber(row[i])));
+        if (hasNumeric) {
+            return columns[i];
+        }
+    }
+    return "";
+}
+
+function setupChartSelectors(columns, rows) {
+    const xSelect = document.getElementById("chartX");
+    const ySelect = document.getElementById("chartY");
+    xSelect.innerHTML = "";
+    ySelect.innerHTML = "";
+
+    columns.forEach((column) => {
+        const xOption = document.createElement("option");
+        xOption.value = column;
+        xOption.textContent = column;
+        xSelect.appendChild(xOption);
+
+        const yOption = document.createElement("option");
+        yOption.value = column;
+        yOption.textContent = column;
+        ySelect.appendChild(yOption);
+    });
+
+    if (columns.length) {
+        xSelect.value = columns[0];
+        const numeric = firstNumericColumn(columns, rows);
+        if (numeric) {
+            ySelect.value = numeric;
+        }
+    }
+}
+
+function clearCanvas(canvas, ctx) {
+    const pixelRatio = window.devicePixelRatio || 1;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    canvas.width = Math.floor(width * pixelRatio);
+    canvas.height = Math.floor(height * pixelRatio);
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    return { width, height };
+}
+
+function drawAxes(ctx, width, height, padding) {
+    ctx.strokeStyle = getCssVar("--line", "#d5e1ec");
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+}
+
+function drawBarChart(ctx, labels, values, width, height) {
+    const padding = 36;
+    drawAxes(ctx, width, height, padding);
+
+    const maxVal = Math.max(...values, 0);
+    if (maxVal <= 0) {
+        return;
+    }
+
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding * 2;
+    const barGap = 8;
+    const barWidth = Math.max((chartWidth - barGap * values.length) / values.length, 8);
+
+    values.forEach((value, index) => {
+        const x = padding + index * (barWidth + barGap);
+        const barHeight = (value / maxVal) * chartHeight;
+        const y = height - padding - barHeight;
+
+        ctx.fillStyle = CHART_COLORS[0];
+        ctx.fillRect(x, y, barWidth, barHeight);
+
+        ctx.fillStyle = getCssVar("--muted", "#536a82");
+        ctx.font = "11px Manrope";
+        ctx.save();
+        ctx.translate(x + barWidth / 2, height - padding + 12);
+        ctx.rotate(-0.35);
+        ctx.fillText(String(labels[index]).slice(0, 14), 0, 0);
+        ctx.restore();
+    });
+}
+
+function drawLineChart(ctx, labels, values, width, height) {
+    const padding = 36;
+    drawAxes(ctx, width, height, padding);
+
+    const maxVal = Math.max(...values, 0);
+    if (maxVal <= 0 || values.length < 2) {
+        return;
+    }
+
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding * 2;
+    const step = chartWidth / (values.length - 1);
+
+    ctx.strokeStyle = CHART_COLORS[0];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    values.forEach((value, index) => {
+        const x = padding + index * step;
+        const y = height - padding - (value / maxVal) * chartHeight;
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+
+    ctx.fillStyle = CHART_COLORS[0];
+    values.forEach((value, index) => {
+        const x = padding + index * step;
+        const y = height - padding - (value / maxVal) * chartHeight;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (index % Math.max(1, Math.floor(values.length / 7)) === 0) {
+            ctx.fillStyle = getCssVar("--muted", "#536a82");
+            ctx.font = "11px Manrope";
+            ctx.fillText(String(labels[index]).slice(0, 12), x - 12, height - padding + 14);
+            ctx.fillStyle = CHART_COLORS[0];
+        }
+    });
+}
+
+function drawPieChart(ctx, labels, values, width, height) {
+    const total = values.reduce((sum, item) => sum + item, 0);
+    if (total <= 0) {
+        return;
+    }
+
+    const radius = Math.min(width, height) * 0.3;
+    const centerX = width * 0.34;
+    const centerY = height * 0.5;
+    const colors = CHART_COLORS;
+
+    let startAngle = -Math.PI / 2;
+
+    values.forEach((value, index) => {
+        const slice = (value / total) * Math.PI * 2;
+        const endAngle = startAngle + slice;
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fill();
+
+        startAngle = endAngle;
+    });
+
+    ctx.font = "12px Manrope";
+    labels.slice(0, 7).forEach((label, index) => {
+        const y = 20 + index * 20;
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillRect(width * 0.62, y - 9, 11, 11);
+        ctx.fillStyle = getCssVar("--text", "#102336");
+        ctx.fillText(`${String(label).slice(0, 14)} (${values[index].toFixed(1)})`, width * 0.62 + 16, y);
+    });
+}
+
+function renderChart() {
+    const columns = state.queryResult.columns;
+    const rows = state.queryResult.rows;
+
+    if (!columns.length || !rows.length) {
+        document.getElementById("chartHint").textContent = "Run a query that returns rows before charting.";
+        return;
+    }
+
+    const chartType = document.getElementById("chartType").value;
+    const xCol = document.getElementById("chartX").value;
+    const yCol = document.getElementById("chartY").value;
+
+    const xIndex = columns.indexOf(xCol);
+    const yIndex = columns.indexOf(yCol);
+
+    if (xIndex < 0 || yIndex < 0) {
+        document.getElementById("chartHint").textContent = "Select valid X and Y columns.";
+        return;
+    }
+
+    const labels = [];
+    const values = [];
+
+    rows.slice(0, 60).forEach((row) => {
+        const yNum = toNumber(row[yIndex]);
+        if (!Number.isFinite(yNum)) {
+            return;
+        }
+        labels.push(row[xIndex]);
+        values.push(yNum);
+    });
+
+    if (!values.length) {
+        document.getElementById("chartHint").textContent = "Selected Y column has no numeric values.";
+        return;
+    }
+
+    const canvas = document.getElementById("resultChart");
+    const ctx = canvas.getContext("2d");
+    const { width, height } = clearCanvas(canvas, ctx);
+
+    ctx.fillStyle = getCssVar("--text", "#102336");
+    ctx.font = "600 13px Sora";
+    ctx.fillText(`${chartType.toUpperCase()} chart: ${yCol} by ${xCol}`, 12, 18);
+
+    if (chartType === "bar") {
+        drawBarChart(ctx, labels, values, width, height);
+    } else if (chartType === "line") {
+        drawLineChart(ctx, labels, values, width, height);
+    } else {
+        drawPieChart(ctx, labels, values, width, height);
+    }
+
+    document.getElementById("chartHint").textContent = `Rendered ${chartType} chart with ${values.length} points.`;
+}
+
+async function refreshTables(preferred) {
+    try {
+        const payload = await apiRequest("/tables");
+        state.tables = payload.tables || [];
+        state.hasDatabase = state.tables.length > 0;
+        state.activeTable = preferred || payload.active_table || state.tables[0] || null;
+        syncTableSelectors();
+
+        if (state.activeTable) {
+            setDatabaseDependentState(true);
+            await loadSchema(state.activeTable);
+        } else {
+            renderSchema([]);
+            setDatabaseDependentState(false);
+            setStatus("tableStatus", "No table connected yet.", "info");
+        }
+    } catch (error) {
+        resetDataPanels();
+        setStatus("dbStatus", error.message, "error");
+    }
+}
+
+async function loadSchema(tableName) {
+    if (!tableName) {
+        renderSchema([]);
+        return;
+    }
+
+    try {
+        const payload = await apiRequest(`/schema?table_name=${encodeURIComponent(tableName)}`);
+        state.schema = payload.schema || [];
+        state.activeTable = payload.table_name;
+        renderSchema(state.schema);
+        syncTableSelectors();
+    } catch (error) {
+        renderSchema([]);
+        setStatus("dbStatus", error.message, "error");
+    }
+}
+
+async function uploadDataset() {
+    console.log("uploadDataset called");
+    const fileInput = document.getElementById("uploadFile");
+    const file = fileInput.files[0];
+    console.log("file:", file);
+    if (!file) {
+        setStatus("uploadStatus", "Select a file before upload.", "error");
+        return;
+    }
+
+    const delimiter = document.getElementById("uploadDelimiter").value;
+    const tableName = document.getElementById("uploadTable").value.trim();
+    console.log("delimiter:", delimiter, "tableName:", tableName);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("delimiter", delimiter);
+    if (tableName) {
+        formData.append("table_name", tableName);
+    }
+
+    try {
+        console.log("Making API request...");
+        setStatus("uploadStatus", "Uploading and storing dataset...", "info");
+        const payload = await apiRequest("/upload", {
+            method: "POST",
+            body: formData,
+        });
+        console.log("Upload successful:", payload);
+
+        state.hasDatabase = true;
+        state.activeTable = payload.table_name;
+        setStatus(
+            "uploadStatus",
+            `✅ Uploaded '${payload.table_name}' with ${payload.rows} rows. Now available in AI Studio for queries!`,
+            "success"
+        );
+
+        await refreshTables(payload.table_name);
+        await loadTablePreview();
+    } catch (error) {
+        console.error("Upload failed:", error);
+        setStatus("uploadStatus", error.message, "error");
+    }
+}
+
+async function connectDatabase() {
+    const fileInput = document.getElementById("dbFile");
+    const file = fileInput.files[0];
+
+    if (!file) {
+        setStatus("dbStatus", "Select a SQLite DB file to connect.", "error");
+        return;
+    }
+
+    const preferredTable = document.getElementById("dbActiveTable").value.trim();
+
+    const formData = new FormData();
+    formData.append("file", file);
+    if (preferredTable) {
+        formData.append("active_table", preferredTable);
+    }
+
+    try {
+        setStatus("dbStatus", "Connecting database...", "info");
+        const payload = await apiRequest("/connect/sqlite", {
+            method: "POST",
+            body: formData,
+        });
+
+        state.hasDatabase = true;
+        state.activeTable = payload.active_table;
+        setStatus(
+            "dbStatus",
+            `Connected DB with ${payload.tables.length} tables. Active table: ${payload.active_table}.`,
+            "success"
+        );
+
+        await refreshTables(payload.active_table);
+        await loadTablePreview();
+    } catch (error) {
+        setStatus("dbStatus", error.message, "error");
+    }
+}
+
+async function loadTablePreview() {
+    if (!state.hasDatabase) {
+        setStatus("tableStatus", "Connect a database or upload a file first.", "error");
+        return;
+    }
+
+    const selectedTable = document.getElementById("explorerTable").value || state.activeTable;
+    const limit = Number(document.getElementById("tableLimit").value || "200");
+
+    if (!selectedTable) {
+        setStatus("tableStatus", "No table selected.", "error");
+        return;
+    }
+
+    try {
+        setStatus("tableStatus", "Loading table preview...", "info");
+        const payload = await apiRequest(`/table?table_name=${encodeURIComponent(selectedTable)}&limit=${limit}`);
+        state.preview = {
+            columns: payload.columns || [],
+            rows: payload.rows || []
+        };
+        state.activeTable = payload.table_name;
+        renderTable("previewHead", "previewBody", state.preview.columns, state.preview.rows);
+        await loadSchema(state.activeTable);
+        setStatus(
+            "tableStatus",
+            `Loaded ${state.preview.rows.length} rows from '${state.activeTable}'.`,
+            "success"
+        );
+    } catch (error) {
+        renderTable("previewHead", "previewBody", [], []);
+        setStatus("tableStatus", error.message, "error");
+    }
+}
+
+async function runAIQuery() {
+    const query = document.getElementById("queryText").value.trim();
+    const tableName = document.getElementById("queryTable").value || state.activeTable;
+    const answerMode = document.getElementById("answerMode").value;
+
+    if (!state.hasDatabase) {
+        setStatus("queryStatus", "Connect a database or upload a file first.", "error");
+        return;
+    }
+
+    if (!query) {
+        setStatus("queryStatus", "Enter a prompt before running AI query.", "error");
+        return;
+    }
+
+    try {
+        setStatus("queryStatus", "Generating SQL and executing query...", "info");
+        const payload = await apiRequest("/query", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query, table_name: tableName }),
+        });
+
+        document.getElementById("generatedSql").textContent = payload.generated_sql || "";
+        state.queryResult = {
+            columns: payload.columns || [],
+            rows: payload.rows || []
+        };
+
+        renderTable("queryHead", "queryBody", state.queryResult.columns, state.queryResult.rows);
+        setupChartSelectors(state.queryResult.columns, state.queryResult.rows);
+
+        if (payload.has_result_set && state.queryResult.rows.length) {
+            setStatus(
+                "queryStatus",
+                `AI query returned ${state.queryResult.rows.length} rows.`,
+                "success"
+            );
+
+            if (answerMode === "graph" || answerMode === "auto") {
+                renderChart();
+            } else {
+                const canvas = document.getElementById("resultChart");
+                const ctx = canvas.getContext("2d");
+                clearCanvas(canvas, ctx);
+                document.getElementById("chartHint").textContent = "Table mode selected. Switch to graph mode to visualize.";
+            }
+        } else {
+            setStatus(
+                "queryStatus",
+                "AI SQL executed successfully. No result rows returned.",
+                "success"
+            );
+            const canvas = document.getElementById("resultChart");
+            const ctx = canvas.getContext("2d");
+            clearCanvas(canvas, ctx);
+            document.getElementById("chartHint").textContent = "No result set available for charting.";
+        }
+
+        state.tables = payload.tables || state.tables;
+        state.activeTable = payload.table_name || state.activeTable;
+        syncTableSelectors();
+        await refreshTables(state.activeTable);
+
+        addHistoryEntry({
+            question: query,
+            mode: answerMode,
+            sql: payload.generated_sql || "",
+            answer: payload.has_result_set ? "Result generated" : "Executed without row output",
+            rows: state.queryResult.rows.length,
+            columns: state.queryResult.columns.length,
+            error: false,
+            source: "ai",
+            result: snapshotResult(state.queryResult.columns, state.queryResult.rows),
+            chartConfig: getCurrentChartConfig()
+        });
+    } catch (error) {
+        setStatus("queryStatus", error.message, "error");
+        addHistoryEntry({
+            question: query,
+            mode: answerMode,
+            sql: "",
+            answer: error.message,
+            rows: 0,
+            columns: 0,
+            error: true,
+            source: "ai",
+            result: snapshotResult([], []),
+            chartConfig: null
+        });
+    }
+}
+
+async function runDirectSQL() {
+    if (!state.hasDatabase) {
+        setStatus("sqlStatus", "Connect a database or upload a file first.", "error");
+        return;
+    }
+
+    const sqlInput = document.getElementById("rawSql").value.trim();
+    const inputType = document.getElementById("sqlInputType").value;
+    const answerMode = document.getElementById("answerMode").value;
+    const activeTable = document.getElementById("sqlTable").value || state.activeTable;
+    const beforeTables = new Set(state.tables);
+
+    if (!sqlInput) {
+        setStatus("sqlStatus", "Enter SQL before running.", "error");
+        return;
+    }
+
+    try {
+        setStatus("sqlStatus", "Executing SQL...", "info");
+        const payload = await apiRequest("/sql", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sql: sqlInput, input_type: inputType, active_table: activeTable }),
+        });
+
+        const renderedSql = payload.generated_sql || payload.executed_sql || sqlInput;
+        document.getElementById("generatedSql").textContent = renderedSql;
+        state.queryResult = {
+            columns: payload.columns || [],
+            rows: payload.rows || []
+        };
+
+        renderTable("queryHead", "queryBody", state.queryResult.columns, state.queryResult.rows);
+        setupChartSelectors(state.queryResult.columns, state.queryResult.rows);
+
+        if (payload.has_result_set && state.queryResult.rows.length) {
+            setStatus("sqlStatus", `SQL returned ${state.queryResult.rows.length} rows.`, "success");
+            if (answerMode === "graph" || answerMode === "auto") {
+                renderChart();
+            } else {
+                const canvas = document.getElementById("resultChart");
+                const ctx = canvas.getContext("2d");
+                clearCanvas(canvas, ctx);
+                document.getElementById("chartHint").textContent = "Table mode selected for SQL output.";
+            }
+        } else {
+            setStatus("sqlStatus", "SQL executed successfully (no result rows).", "success");
+            document.getElementById("chartHint").textContent = "Run SELECT SQL to generate chartable data.";
+        }
+
+        state.tables = payload.tables || state.tables;
+        const newlyCreatedTable = state.tables.find((tableName) => !beforeTables.has(tableName));
+        state.activeTable = newlyCreatedTable || payload.table_name || state.activeTable;
+        syncTableSelectors();
+        await refreshTables(state.activeTable);
+        await loadTablePreview();
+
+        addHistoryEntry({
+            question: sqlInput,
+            mode: answerMode,
+            sql: renderedSql,
+            answer: payload.has_result_set ? "Result generated" : "Executed without row output",
+            rows: state.queryResult.rows.length,
+            columns: state.queryResult.columns.length,
+            error: false,
+            source: "sql",
+            result: snapshotResult(state.queryResult.columns, state.queryResult.rows),
+            chartConfig: getCurrentChartConfig()
+        });
+    } catch (error) {
+        setStatus("sqlStatus", error.message, "error");
+        addHistoryEntry({
+            question: sqlInput,
+            mode: answerMode,
+            sql: "",
+            answer: error.message,
+            rows: 0,
+            columns: 0,
+            error: true,
+            source: "sql",
+            result: snapshotResult([], []),
+            chartConfig: null
+        });
+    }
+}
+
+function downloadCurrentTable() {
+    const selectedTable = document.getElementById("explorerTable").value || state.activeTable;
+
+    if (!selectedTable) {
+        setStatus("tableStatus", "Select a table before downloading.", "error");
+        return;
+    }
+
+    window.location.href = `/download?table_name=${encodeURIComponent(selectedTable)}`;
+}
+
+function activateView(target) {
+    document.querySelectorAll(".nav-btn").forEach((btn) => btn.classList.remove("active"));
+    const activeButton = document.querySelector(`.nav-btn[data-target="${target}"]`);
+    if (activeButton) {
+        activeButton.classList.add("active");
+    }
+
+    document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
+    const activeView = document.getElementById(`view-${target}`);
+    if (activeView) {
+        activeView.classList.add("active");
+    }
+
+    document.getElementById("viewTitle").textContent = viewTitles[target] || "ORA AI Workspace";
+}
+
+function wireNavigation() {
+    document.querySelectorAll(".nav-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+            const target = button.getAttribute("data-target");
+            activateView(target);
+        });
+    });
+}
+
+function bindActions() {
+    document.getElementById("uploadBtn").addEventListener("click", uploadDataset);
+    document.getElementById("connectDbBtn").addEventListener("click", connectDatabase);
+    document.getElementById("refreshTablesBtn").addEventListener("click", async () => {
+        await refreshTables();
+        if (!state.hasDatabase) {
+            setStatus("dbStatus", "No connected database found. Upload or connect to continue.", "info");
+        }
+    });
+    document.getElementById("loadTableBtn").addEventListener("click", loadTablePreview);
+    document.getElementById("runQueryBtn").addEventListener("click", runAIQuery);
+    document.getElementById("runSqlBtn").addEventListener("click", runDirectSQL);
+    document.getElementById("downloadBtn").addEventListener("click", downloadCurrentTable);
+    document.getElementById("renderChartBtn").addEventListener("click", renderChart);
+    document.getElementById("clearHistoryBtn").addEventListener("click", () => {
+        state.history = [];
+        renderHistory();
+    });
+
+    document.getElementById("explorerTable").addEventListener("change", async (event) => {
+        state.activeTable = event.target.value;
+        syncTableSelectors();
+        await loadSchema(state.activeTable);
+    });
+
+    document.getElementById("queryTable").addEventListener("change", (event) => {
+        state.activeTable = event.target.value;
+        syncTableSelectors();
+    });
+
+    document.getElementById("sqlTable").addEventListener("change", (event) => {
+        state.activeTable = event.target.value;
+        syncTableSelectors();
+    });
+
+    document.getElementById("sqlInputType").addEventListener("change", updateSqlInputTypeUI);
+
+    window.addEventListener("resize", () => {
+        if (state.queryResult.columns.length && state.queryResult.rows.length) {
+            renderChart();
+        }
+    });
+}
+
+async function bootstrap() {
+    wireNavigation();
+    bindActions();
+    resetDataPanels();
+    renderHistory();
+    updateSqlInputTypeUI();
+    await refreshTables();
+    setStatus("uploadStatus", "Upload a CSV/Excel/TXT file to start.", "info");
+    setStatus("dbStatus", "Connect a SQLite database to unlock explorer and AI.", "info");
+}
+
+bootstrap();
+</script>
+
+<!-- Modal for status messages -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--panel-glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--line);">
+                <h5 class="modal-title" id="statusModalLabel">Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalStatusMessage"></div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--line);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for table interaction -->
+<div class="modal fade" id="tableModal" tabindex="-1" aria-labelledby="tableModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="background: var(--panel-glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--line);">
+                <h5 class="modal-title" id="tableModalLabel">Table Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="tableInfo">
+                    <h6 id="tableName"></h6>
+                    <div id="tableSchema"></div>
+                    <div id="tableStats"></div>
+                </div>
+                <div class="mt-3">
+                    <h6>Quick Actions:</h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-sm btn-primary" onclick="quickPreview()">Preview Data</button>
+                        <button class="btn btn-sm btn-info" onclick="quickQuery()">Ask AI About This Table</button>
+                        <button class="btn btn-sm btn-success" onclick="quickSQL()">Run SQL on This Table</button>
+                        <button class="btn btn-sm btn-warning" onclick="downloadTable()">Download Table</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--line);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="setAsActiveTable()">Set as Active Table</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

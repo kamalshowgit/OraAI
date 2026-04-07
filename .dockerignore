@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+.venv312
+__pycache__/
+*/__pycache__/
+*.pyc
+uploads/
+exports/
+*.sqlite
+*.sqlite3
+*.db
+.env
+.env.*
