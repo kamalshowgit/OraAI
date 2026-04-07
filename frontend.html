@@ -870,6 +870,11 @@ textarea {
 </div>
 
 <script>
+// Configuration
+const CONFIG = {
+    API_BASE: window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, ''), // Use base path of the frontend
+};
+
 const state = {
     tables: [],
     activeTable: null,
@@ -888,6 +893,21 @@ const viewTitles = {
     "ai-studio": "ORA AI Studio",
     "history": "ORA AI History"
 };
+
+function getCssVar(name, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+}
+
+const CHART_COLORS = [
+    getCssVar("--chart-1", "#1b6fc9"),
+    getCssVar("--chart-2", "#0f8e7b"),
+    getCssVar("--chart-3", "#ff9f43"),
+    getCssVar("--chart-4", "#1388d8"),
+    getCssVar("--chart-5", "#e66363"),
+    getCssVar("--chart-6", "#0b5c8a"),
+    getCssVar("--chart-7", "#4cbf9f"),
+];
 
 function showLoading(text = "Processing...") {
     document.getElementById("loadingText").textContent = text;
@@ -945,16 +965,26 @@ function setStatus(id, message, type = "info") {
 }
 
 async function apiRequest(url, options = {}) {
-    const response = await fetch(url, options);
-    const contentType = response.headers.get("content-type") || "";
-    const payload = contentType.includes("application/json") ? await response.json() : null;
+    const fullUrl = url.startsWith('http') ? url : `${CONFIG.API_BASE}${url}`;
+    console.log('Making API request to:', fullUrl, options);
+    try {
+        const response = await fetch(fullUrl, options);
+        console.log('API response status:', response.status, response.statusText);
+        const contentType = response.headers.get("content-type") || "";
+        const payload = contentType.includes("application/json") ? await response.json() : null;
+        console.log('API response payload:', payload);
 
-    if (!response.ok) {
-        const errorText = payload?.detail || "Request failed";
-        throw new Error(errorText);
+        if (!response.ok) {
+            const errorText = payload?.detail || "Request failed";
+            console.error('API request failed:', errorText);
+            throw new Error(errorText);
+        }
+
+        return payload;
+    } catch (error) {
+        console.error('API request error:', error);
+        throw error;
     }
-
-    return payload;
 }
 
 function setKpis() {
@@ -1528,15 +1558,20 @@ async function loadSchema(tableName) {
 }
 
 async function uploadDataset() {
+    console.log('uploadDataset called');
     const fileInput = document.getElementById("uploadFile");
     const file = fileInput.files[0];
+    console.log('Selected file:', file);
+
     if (!file) {
+        console.log('No file selected');
         setStatus("uploadStatus", "Select a file before upload.", "error");
         return;
     }
 
     const delimiter = document.getElementById("uploadDelimiter").value;
     const tableName = document.getElementById("uploadTable").value.trim();
+    console.log('Delimiter:', delimiter, 'Table name:', tableName);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -1544,6 +1579,8 @@ async function uploadDataset() {
     if (tableName) {
         formData.append("table_name", tableName);
     }
+
+    console.log('FormData prepared, making API call...');
 
     try {
         setButtonLoading("uploadBtn", true, "Uploading...");
@@ -1553,6 +1590,7 @@ async function uploadDataset() {
             body: formData,
         });
 
+        console.log('Upload successful:', payload);
         state.hasDatabase = true;
         state.activeTable = payload.table_name;
         setStatus(
@@ -1564,6 +1602,7 @@ async function uploadDataset() {
         await refreshTables(payload.table_name);
         await loadTablePreview();
     } catch (error) {
+        console.error('Upload failed:', error);
         setStatus("uploadStatus", error.message, "error");
     } finally {
         setButtonLoading("uploadBtn", false);
