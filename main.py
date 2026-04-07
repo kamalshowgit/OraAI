@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 from agent.sql_agent import generate_sql, is_safe_sql
 from agent.sql_executor import execute_sql
 from ingestion.csv_excel_to_sqlite import dataframe_to_sqlite
-from ingestion.db_config import DB_PATH, DATA_ROOT
+from ingestion.db_config import DB_PATH, DATA_ROOT, EXPORT_DIR
 from ingestion.export_utils import export_table
 from ingestion.file_loader import load_file
 from ingestion.schema_utils import get_table_schema, list_all_tables
@@ -427,6 +427,28 @@ def get_table(
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
+@app.post("/cleanup")
+def cleanup_database():
+    """Clean up the database and uploaded files."""
+    try:
+        if DB_PATH.exists():
+            DB_PATH.unlink(missing_ok=True)
+        
+        # Clean up uploaded files
+        for file_path in UPLOAD_DIR.glob("*"):
+            if file_path.is_file():
+                file_path.unlink(missing_ok=True)
+        
+        # Clean up exported files
+        for file_path in EXPORT_DIR.glob("*"):
+            if file_path.is_file():
+                file_path.unlink(missing_ok=True)
+        
+        return {"message": "Database and files cleaned up successfully"}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
 @app.get("/", response_class=HTMLResponse)
 def serve_landing():
     with open("index.html", "r", encoding="utf-8") as landing_file:
@@ -437,3 +459,14 @@ def serve_landing():
 def serve_frontend():
     with open("frontend.html", "r", encoding="utf-8") as frontend_file:
         return frontend_file.read()
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 8000)),
+        reload=True,
+    )

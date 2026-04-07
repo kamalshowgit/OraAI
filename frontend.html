@@ -353,6 +353,16 @@ textarea {
     background: var(--primary-hover);
 }
 
+.btn.danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
+.btn.danger:hover {
+    background: #a63737;
+}
+
 .actions {
     display: flex;
     gap: 8px;
@@ -713,6 +723,7 @@ textarea {
                         <div class="actions">
                             <button class="btn success" id="connectDbBtn">Connect Database</button>
                             <button class="btn" id="refreshTablesBtn">Refresh Tables</button>
+                            <button class="btn danger" id="cleanupBtn">Clear All Data</button>
                         </div>
                         <div id="dbStatus" class="status info">You can either upload data or connect an existing DB.</div>
                     </div>
@@ -944,16 +955,6 @@ function setButtonLoading(buttonId, loading = true, text = null) {
         }
     }
 }
-
-const CHART_COLORS = [
-    getCssVar("--chart-1", "#1b6fc9"),
-    getCssVar("--chart-2", "#0f8e7b"),
-    getCssVar("--chart-3", "#ff9f43"),
-    getCssVar("--chart-4", "#1388d8"),
-    getCssVar("--chart-5", "#e66363"),
-    getCssVar("--chart-6", "#0b5c8a"),
-    getCssVar("--chart-7", "#4cbf9f"),
-];
 
 function setStatus(id, message, type = "info") {
     const el = document.getElementById(id);
@@ -1539,6 +1540,40 @@ async function refreshTables(preferred) {
     }
 }
 
+async function cleanupDatabase() {
+    if (!confirm("Are you sure you want to clear all data? This will remove the database and all uploaded files.")) {
+        return;
+    }
+
+    try {
+        setButtonLoading("cleanupBtn", true, "Cleaning...");
+        setStatus("dbStatus", "Cleaning up database and files...", "info");
+        const payload = await apiRequest("/cleanup", {
+            method: "POST",
+        });
+
+        // Reset state
+        state.tables = [];
+        state.activeTable = null;
+        state.schema = [];
+        state.preview = { columns: [], rows: [] };
+        state.queryResult = { columns: [], rows: [] };
+        state.hasDatabase = false;
+        state.history = [];
+
+        // Clear UI
+        resetDataPanels();
+        setDatabaseDependentState(false);
+        renderHistory();
+
+        setStatus("dbStatus", "All data cleared successfully.", "success");
+    } catch (error) {
+        setStatus("dbStatus", error.message, "error");
+    } finally {
+        setButtonLoading("cleanupBtn", false);
+    }
+}
+
 async function loadSchema(tableName) {
     if (!tableName) {
         renderSchema([]);
@@ -1931,6 +1966,7 @@ function bindActions() {
             setStatus("dbStatus", "No connected database found. Upload or connect to continue.", "info");
         }
     });
+    document.getElementById("cleanupBtn").addEventListener("click", cleanupDatabase);
     document.getElementById("loadTableBtn").addEventListener("click", loadTablePreview);
     document.getElementById("runQueryBtn").addEventListener("click", runAIQuery);
     document.getElementById("runSqlBtn").addEventListener("click", runDirectSQL);
@@ -1970,6 +2006,7 @@ async function bootstrap() {
     wireNavigation();
     bindActions();
     resetDataPanels();
+    await refreshTables();
     renderHistory();
     updateSqlInputTypeUI();
     setStatus("uploadStatus", "Upload a CSV/Excel/TXT file to start.", "info");
