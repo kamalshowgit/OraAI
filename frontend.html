@@ -22,7 +22,7 @@
     --secondary: #1b6fc9;
     --secondary-hover: #165fac;
     --secondary-soft: #e7f1fd;
-    --info: #1d61a8;
+    --info: #1d61a8;    
     --info-soft: #eaf3ff;
     --success: #0f8e7b;
     --success-soft: #e6f7f3;
@@ -684,6 +684,82 @@ textarea {
     margin: 0;
 }
 
+.ml-output-area {
+    background: #fff;
+    border-radius: 10px;
+    min-height: 120px;
+    font-size: 13px;
+    overflow: auto;
+}
+
+.ml-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.ml-model-card {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(16, 47, 79, 0.04);
+}
+
+.ml-model-card h4 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    color: var(--secondary);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+}
+
+.ml-pred-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(15, 142, 123, 0.2);
+}
+
+.ml-feature-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.ml-feature-list li {
+    margin-bottom: 6px;
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 6px 10px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.ml-feature-list li span:last-child {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.ml-summary-box {
+    padding: 14px;
+    background: var(--info-soft);
+    border-radius: 8px;
+    margin-bottom: 14px;
+    border: 1px solid #c6ddfb;
+    color: var(--info);
+    font-size: 14px;
+}
+
 @media (max-width: 1024px) {
     .app-shell {
         grid-template-columns: 1fr;
@@ -729,6 +805,7 @@ textarea {
         <button class="nav-btn" data-target="explorer">Explorer</button>
         <button class="nav-btn" data-target="ai-studio">AI Studio</button>
         <button class="nav-btn" data-target="visualize">Visualize</button>
+        <button class="nav-btn" data-target="model-studio">Model Studio</button>
         <button class="nav-btn" data-target="history">History</button>
         <div class="rail-footer">
             Connect data, run AI SQL, inspect tables,
@@ -966,6 +1043,56 @@ textarea {
                 </div>
             </div>
 
+            <div class="view" id="view-model-studio">
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Model Training & EDA</h3>
+                        <label>
+                            Table
+                            <select id="mlTable"></select>
+                        </label>
+                        <label>
+                            Target Column
+                            <input type="text" id="mlTarget" placeholder="Target variable name">
+                        </label>
+                        <label>
+                            ID Column (Optional)
+                            <input type="text" id="mlIdCol" placeholder="ID variable for prediction tracking">
+                        </label>
+                        <div class="actions">
+                            <button class="btn" id="btnEda">Run EDA</button>
+                            <button class="btn success" id="btnTrain">Train Model</button>
+                        </div>
+                        <div id="mlStatus" class="status info">Select a table and target to train.</div>
+                    </div>
+                    <div class="card">
+                        <h3>Prediction & Validation</h3>
+                        <label>
+                            Trained Model ID
+                            <input type="text" id="mlModelId" placeholder="Will be populated after training" readonly>
+                        </label>
+                        <label>
+                            Specific Row ID to Predict (requires ID column)
+                            <input type="text" id="mlRowId" placeholder="Row ID">
+                        </label>
+                        <div class="actions">
+                            <button class="btn primary" id="btnExplain">Explain Reason (Approve/Reject)</button>
+                        </div>
+                        <label style="margin-top: 10px;">
+                            Test Table for Performance
+                            <select id="mlTestTable"></select>
+                        </label>
+                        <div class="actions">
+                            <button class="btn" id="btnEvaluate">Evaluate on Test Table</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 14px;">
+                    <h3>Model Output / Insights</h3>
+                    <div id="mlOutput" class="ml-output-area">Outputs will appear here.</div>
+                </div>
+            </div>
+
             <div class="view" id="view-history">
                 <div class="card">
                     <h3>Question History (Max 10)</h3>
@@ -1031,6 +1158,7 @@ const viewTitles = {
     "explorer": "ORA AI Explorer",
     "ai-studio": "ORA AI Studio",
     "visualize": "ORA AI Visualize",
+    "model-studio": "ORA AI Model Studio",
     "history": "ORA AI History"
 };
 
@@ -1246,6 +1374,8 @@ function syncTableSelectors() {
     setSelectOptions("queryTable", tableOptions, active);
     setSelectOptions("sqlTable", tableOptions, active);
     setSelectOptions("visualizeTable", tableOptions, active);
+    setSelectOptions("mlTable", tableOptions, active);
+    setSelectOptions("mlTestTable", tableOptions, active);
 
     if (state.activeTable) {
         document.getElementById("uploadTable").value = state.activeTable;
@@ -1279,7 +1409,17 @@ function setDatabaseDependentState(enabled) {
         "chartY",
         "renderChartBtn",
         "downloadChartBtn",
-        "exportChartDataBtn"
+        "exportChartDataBtn",
+        "mlTable",
+        "mlTarget",
+        "mlIdCol",
+        "btnEda",
+        "btnTrain",
+        "mlModelId",
+        "mlRowId",
+        "btnExplain",
+        "mlTestTable",
+        "btnEvaluate"
     ].forEach((id) => {
         const element = document.getElementById(id);
         if (element) {
@@ -1310,6 +1450,8 @@ function resetDataPanels() {
     setStatus("queryStatus", "Connect a database or upload data to start asking questions.", "info");
     setStatus("sqlStatus", "Connect a database or upload data to run SQL.", "info");
     setStatus("visualizeStatus", "Choose a table to load into Graph Studio.", "info");
+    setStatus("mlStatus", "Select a table and target to train.", "info");
+    document.getElementById("mlOutput").textContent = "Outputs will appear here.";
     syncTableSelectors();
     setDatabaseDependentState(false);
 }
@@ -2310,6 +2452,204 @@ function wireNavigation() {
     });
 }
 
+async function runEda() {
+    const table = document.getElementById("mlTable").value || state.activeTable;
+    if (!state.hasDatabase || !table) {
+        setStatus("mlStatus", "Select a table first.", "error");
+        return;
+    }
+    
+    try {
+        setButtonLoading("btnEda", true, "Running...");
+        setStatus("mlStatus", "Running EDA...", "info");
+        const payload = await apiRequest(`/ml/eda?table_name=${encodeURIComponent(table)}`);
+        
+        const container = document.getElementById("mlOutput");
+        
+        let html = `<div class="ml-summary-box"><strong>EDA Summary for '${table}'</strong> &mdash; ${payload.total_rows} rows, ${payload.columns.length} columns</div>`;
+        
+        html += `<div class="ml-grid">`;
+        
+        // Missing Values Card
+        html += `<div class="ml-model-card"><h4>Missing Values</h4><ul class="ml-feature-list">`;
+        let hasMissing = false;
+        for (const [col, count] of Object.entries(payload.missing_values)) {
+            if (count > 0) {
+                html += `<li><span>${col}</span> <span>${count} missing</span></li>`;
+                hasMissing = true;
+            }
+        }
+        if (!hasMissing) html += `<li><span style="color:var(--success);">No missing values detected!</span></li>`;
+        html += `</ul></div>`;
+        
+        // Data Types Card
+        html += `<div class="ml-model-card"><h4>Data Types</h4><ul class="ml-feature-list">`;
+        for (const [col, type] of Object.entries(payload.dtypes).slice(0, 10)) {
+            html += `<li><span>${col}</span> <span>${type}</span></li>`;
+        }
+        if (Object.keys(payload.dtypes).length > 10) {
+             html += `<li><span>... and ${Object.keys(payload.dtypes).length - 10} more</span></li>`;
+        }
+        html += `</ul></div>`;
+        
+        html += `</div>`;
+        container.innerHTML = html;
+        
+        setStatus("mlStatus", "EDA complete.", "success");
+    } catch (error) {
+        setStatus("mlStatus", error.message, "error");
+        document.getElementById("mlOutput").innerHTML = `<div class="status error">${error.message}</div>`;
+    } finally {
+        setButtonLoading("btnEda", false);
+    }
+}
+
+async function trainModel() {
+    const table = document.getElementById("mlTable").value || state.activeTable;
+    const target = document.getElementById("mlTarget").value.trim();
+    const idCol = document.getElementById("mlIdCol").value.trim();
+    
+    if (!state.hasDatabase || !table || !target) {
+        setStatus("mlStatus", "Table and target column are required.", "error");
+        return;
+    }
+    
+    try {
+        setButtonLoading("btnTrain", true, "Training...");
+        setStatus("mlStatus", "Training ensemble models...", "info");
+        
+        const body = { table_name: table, target_column: target };
+        if (idCol) body.id_column = idCol;
+        
+        const payload = await apiRequest("/ml/train", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+        
+        document.getElementById("mlModelId").value = payload.model_id;
+        
+        const container = document.getElementById("mlOutput");
+        let html = `<div class="ml-summary-box"><strong>${payload.message}</strong></div>`;
+        html += `<div class="ml-grid">`;
+        
+        payload.results.forEach(res => {
+            html += `<div class="ml-model-card">
+                <h4>${res.model_name}</h4>
+                <div style="font-size: 24px; font-weight: 600; color: var(--secondary);">
+                    ${(res.accuracy * 100).toFixed(2)}%
+                </div>
+                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Validation Accuracy</div>
+            </div>`;
+        });
+        
+        html += `</div>`;
+        container.innerHTML = html;
+        setStatus("mlStatus", `Models trained successfully.`, "success");
+    } catch (error) {
+        setStatus("mlStatus", error.message, "error");
+        document.getElementById("mlOutput").innerHTML = `<div class="status error">${error.message}</div>`;
+    } finally {
+        setButtonLoading("btnTrain", false);
+    }
+}
+
+async function explainRow() {
+    const modelId = document.getElementById("mlModelId").value.trim();
+    const rowId = document.getElementById("mlRowId").value.trim();
+    
+    if (!modelId || !rowId) {
+        setStatus("mlStatus", "Model ID and Row ID are required. Please train with an ID column.", "error");
+        return;
+    }
+    
+    try {
+        setButtonLoading("btnExplain", true, "Explaining...");
+        setStatus("mlStatus", "Generating ensemble explanation...", "info");
+        
+        const payload = await apiRequest("/ml/explain", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model_id: modelId, row_id: rowId })
+        });
+        
+        const container = document.getElementById("mlOutput");
+        let html = `<div class="ml-summary-box"><strong>Prediction Insights for Row ID: ${rowId}</strong></div>`;
+        html += `<div class="ml-grid">`;
+        
+        payload.explanations.forEach(exp => {
+            html += `<div class="ml-model-card">
+                <h4>${exp.model_name}</h4>
+                <div class="ml-pred-badge">${exp.prediction}</div>
+                ${exp.probability ? `<div style="font-size:12px; color:var(--muted); margin-bottom: 10px;">Confidence: ${(exp.probability * 100).toFixed(1)}%</div>` : ''}
+                <div style="font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text);">Top Driving Factors:</div>
+                <ul class="ml-feature-list">`;
+                
+            exp.derivation.forEach(d => {
+                html += `<li>
+                    <span>${d.feature} <span style="color:var(--muted)">(${d.value})</span></span>
+                    <span>${d.type.includes('Tree') ? (d.importance * 100).toFixed(1) + '%' : d.importance.toFixed(3)}</span>
+                </li>`;
+            });
+            
+            html += `</ul></div>`;
+        });
+        
+        html += `</div>`;
+        container.innerHTML = html;
+        setStatus("mlStatus", `Ensemble explanation generated.`, "success");
+    } catch (error) {
+        setStatus("mlStatus", error.message, "error");
+        document.getElementById("mlOutput").innerHTML = `<div class="status error">${error.message}</div>`;
+    } finally {
+        setButtonLoading("btnExplain", false);
+    }
+}
+
+async function evaluateModel() {
+    const modelId = document.getElementById("mlModelId").value.trim();
+    const testTable = document.getElementById("mlTestTable").value || state.activeTable;
+    
+    if (!modelId || !testTable) {
+        setStatus("mlStatus", "Model ID and Test Table are required.", "error");
+        return;
+    }
+    
+    try {
+        setButtonLoading("btnEvaluate", true, "Evaluating...");
+        setStatus("mlStatus", `Evaluating models on ${testTable}...`, "info");
+        
+        const payload = await apiRequest("/ml/evaluate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model_id: modelId, test_table_name: testTable })
+        });
+        
+        const container = document.getElementById("mlOutput");
+        let html = `<div class="ml-summary-box"><strong>Evaluation on '${payload.test_table}' (${payload.rows_evaluated} rows)</strong></div>`;
+        html += `<div class="ml-grid">`;
+        
+        payload.results.forEach(res => {
+            html += `<div class="ml-model-card">
+                <h4>${res.model_name}</h4>
+                <div style="font-size: 24px; font-weight: 600; color: var(--secondary);">
+                    ${(res.accuracy * 100).toFixed(2)}%
+                </div>
+                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Test Accuracy</div>
+            </div>`;
+        });
+        
+        html += `</div>`;
+        container.innerHTML = html;
+        setStatus("mlStatus", `Evaluated on ${testTable}.`, "success");
+    } catch (error) {
+        setStatus("mlStatus", error.message, "error");
+        document.getElementById("mlOutput").innerHTML = `<div class="status error">${error.message}</div>`;
+    } finally {
+        setButtonLoading("btnEvaluate", false);
+    }
+}
+
 function bindActions() {
     document.getElementById("uploadBtn").addEventListener("click", uploadDataset);
     document.getElementById("connectDbBtn").addEventListener("click", connectDatabase);
@@ -2355,6 +2695,12 @@ function bindActions() {
     });
 
     document.getElementById("sqlInputType").addEventListener("change", updateSqlInputTypeUI);
+
+    // ML Actions
+    document.getElementById("btnEda").addEventListener("click", runEda);
+    document.getElementById("btnTrain").addEventListener("click", trainModel);
+    document.getElementById("btnExplain").addEventListener("click", explainRow);
+    document.getElementById("btnEvaluate").addEventListener("click", evaluateModel);
 
     window.addEventListener("resize", () => {
         if (state.queryResult.columns.length && state.queryResult.rows.length) {

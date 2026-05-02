@@ -22,8 +22,11 @@ from ingestion.db_config import DB_PATH, DATA_ROOT, EXPORT_DIR
 from ingestion.export_utils import export_table
 from ingestion.file_loader import load_file
 from ingestion.schema_utils import get_table_schema, list_all_tables
+from agent.ml_agent import router as ml_router
 
 app = FastAPI(title="ORA AI Data Platform API")
+
+app.include_router(ml_router)
 
 BASE_DIR = Path(__file__).resolve().parent
 
